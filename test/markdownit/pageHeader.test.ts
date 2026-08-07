@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import MarkdownIt from 'markdown-it';
 import { gitbookPlugin } from '../../src/markdownit/plugin';
+import { renderLikeVsCode } from '../helpers/render';
 
 const FILES: Record<string, string> = {
   '/docs/a.md': '---\ndescription: How to set things up\nicon: rocket\n---\n\n# Setup\n\nBody.\n',
@@ -14,7 +15,7 @@ const md = gitbookPlugin(new MarkdownIt({ html: true }), {
 
 describe('page header', () => {
   it('renders description and icon above the content', () => {
-    const html = md.render('# Setup\n\nBody.\n', { currentDocument: { fsPath: '/docs/a.md' } });
+    const html = renderLikeVsCode(md, '# Setup\n\nBody.\n', { currentDocument: { fsPath: '/docs/a.md' } });
     expect(html).toContain('<div class="gb-page-header">');
     expect(html).toContain('<div class="gb-page-header__icon" data-gb-icon="rocket"');
     expect(html).toContain('<p class="gb-page-header__desc">How to set things up</p>');
@@ -22,17 +23,17 @@ describe('page header', () => {
   });
 
   it('renders nothing when there is no front matter', () => {
-    expect(md.render('# Plain\n', { currentDocument: { fsPath: '/docs/b.md' } })).not.toContain('gb-page-header');
+    expect(renderLikeVsCode(md, '# Plain\n', { currentDocument: { fsPath: '/docs/b.md' } })).not.toContain('gb-page-header');
   });
 
   it('renders the header with no icon when only a description exists', () => {
-    const html = md.render('# C\n', { currentDocument: { fsPath: '/docs/c.md' } });
+    const html = renderLikeVsCode(md, '# C\n', { currentDocument: { fsPath: '/docs/c.md' } });
     expect(html).toContain('gb-page-header__desc');
     expect(html).not.toContain('gb-page-header__icon');
   });
 
   it('renders nothing when the document path is unknown', () => {
-    expect(md.render('# X\n', {})).not.toContain('gb-page-header');
+    expect(renderLikeVsCode(md, '# X\n', {})).not.toContain('gb-page-header');
   });
 
   it('escapes html in the description and quotes in the icon attribute', () => {
@@ -40,7 +41,7 @@ describe('page header', () => {
       readFile: () =>
         '---\ndescription: <script>alert(1)</script>\nicon: a"b\n---\n\n# X\n',
     });
-    const html = hostile.render('# X\n', { currentDocument: { fsPath: '/docs/x.md' } });
+    const html = renderLikeVsCode(hostile, '# X\n', { currentDocument: { fsPath: '/docs/x.md' } });
     expect(html).toContain('&lt;script&gt;');
     expect(html).toContain('data-gb-icon="a&quot;b"');
     expect(html).not.toContain('<script>');
@@ -51,7 +52,7 @@ describe('page header', () => {
       readFile: (p: string) => FILES[p.replace(/\\/g, '/')] ?? null,
       readDocumentText: () => null,
     });
-    const html = noBuffer.render('# Setup\n', { currentDocument: { fsPath: '/docs/a.md' } });
+    const html = renderLikeVsCode(noBuffer, '# Setup\n', { currentDocument: { fsPath: '/docs/a.md' } });
     expect(html).toContain('How to set things up');
   });
 
@@ -62,7 +63,7 @@ describe('page header', () => {
       readFile: (p: string) => FILES[p.replace(/\\/g, '/')] ?? null,
       readDocumentText: () => '',
     });
-    const html = emptyBuffer.render('# Setup\n', { currentDocument: { fsPath: '/docs/a.md' } });
+    const html = renderLikeVsCode(emptyBuffer, '# Setup\n', { currentDocument: { fsPath: '/docs/a.md' } });
     expect(html).not.toContain('gb-page-header');
   });
 
@@ -71,7 +72,20 @@ describe('page header', () => {
       readFile: (p: string) => FILES[p.replace(/\\/g, '/')] ?? null,
       readDocumentText: () => '---\ndescription: Edited in buffer\n---\n\n# X\n',
     });
-    const html = withBuffer.render('# X\n', { currentDocument: { fsPath: '/docs/a.md' } });
+    const html = renderLikeVsCode(withBuffer, '# X\n', { currentDocument: { fsPath: '/docs/a.md' } });
     expect(html).toContain('Edited in buffer');
+  });
+
+  it('renders when the document path is only known at render time', () => {
+    // VS Code tokenizes with an env that has no currentDocument and renders
+    // with the real one, so the header must be produced by a renderer rule.
+    const tokens = md.parse('# Setup\n\nBody.\n', { currentDocument: undefined });
+    const html = md.renderer.render(tokens, md.options, {
+      currentDocument: { fsPath: '/docs/a.md' },
+    });
+    expect(html).toContain('<div class="gb-page-header">');
+    expect(html).toContain('<div class="gb-page-header__icon" data-gb-icon="rocket"');
+    expect(html).toContain('How to set things up');
+    expect(html.indexOf('gb-page-header')).toBeLessThan(html.indexOf('<h1>Setup</h1>'));
   });
 });

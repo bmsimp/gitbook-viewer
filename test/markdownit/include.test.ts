@@ -181,4 +181,9 @@ describe('include under the VS Code parse/render split', () => {
     expect(html).toContain('budget');
   });
 
+  it('does not emit a page header for an included file with a description', () => {
+    const html = renderLikeVsCode(md, '{% include "../../.gitbook/includes/described.md" %}', env());
+    expect(html).toContain('Described body.');
+    expect(html).not.toContain('gb-page-header');
+  });
 });
