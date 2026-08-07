@@ -32,6 +32,14 @@ export interface RenderEnv {
    * whole-page decoration (the page header) that only the root document owns.
    */
   gbNested?: boolean;
+  /**
+   * True while rendering the inline content of a "mention" link whose target
+   * title replaced the authored text; the text rule emits nothing until the
+   * link_close clears it. Lives on the env because renderer rules share one
+   * env per render and tokens themselves must stay immutable (VS Code caches
+   * them per document).
+   */
+  gbMentionSuppress?: boolean;
 }
 
 export type FileReader = (absolutePath: string) => string | null;

@@ -70,7 +70,7 @@ const KNOWN_MISSING_INCLUDES = ['ng-note.md', 'deploy-policy-expand.md'];
 
 const OUTPUT_MARKERS = [
   'gb-hint', 'gb-stepper', 'gb-tabs', 'gb-content-ref', 'gb-embed',
-  'gb-file', 'gb-code', 'gb-page-header', 'gb-include-error',
+  'gb-file', 'gb-code', 'gb-page-header', 'gb-include-error', 'gb-mention',
 ];
 
 const markerCounts = Object.fromEntries(OUTPUT_MARKERS.map((m) => [m, 0]));

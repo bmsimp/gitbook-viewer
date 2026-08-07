@@ -5,6 +5,7 @@ import { defaultFileReader } from './fileReader';
 import { resolveInclude } from './includeResolver';
 import { renderIncludeError } from './renderers/include';
 import { pageHeaderPlugin, type DocumentTextReader } from './pageHeader';
+import { mentionPlugin } from './mention';
 import type { FileReader, GitBookToken, RenderContext, RenderEnv } from './context';
 
 // See the note in context.ts: the CJS build must use the namespace types from
@@ -57,6 +58,7 @@ export function gitbookPlugin(md: MarkdownIt, options: PluginOptions = {}): Mark
   md.renderer.rules.gitbook_include = renderInclude(md, readFile);
 
   pageHeaderPlugin(md, readFile, options.readDocumentText);
+  mentionPlugin(md, readFile);
 
   return md;
 }

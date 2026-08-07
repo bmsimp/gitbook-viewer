@@ -198,3 +198,7 @@ body[data-gb-doc] details > :not(summary) {
 }
 body[data-gb-doc] details > :nth-child(2):not(summary) { margin-top: 0.25rem; }
 body[data-gb-doc] details > :last-child:not(summary) { margin-bottom: 1rem; }
+
+/* GitBook "mention" links: the target title shown slightly emphasized in the
+   standard link color (inherited from the anchor -- no color override). */
+.gb-mention { font-weight: 500; }
