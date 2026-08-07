@@ -83,7 +83,13 @@
    */
   var GITBOOK_MARKUP =
     '[data-gb-tabs], .gb-hint, .gb-stepper, .gb-content-ref, .gb-file, ' +
-    '.gb-embed, .gb-code, .gb-page-header, .gb-include-error';
+    '.gb-embed, .gb-code, .gb-page-header, .gb-include-error, ' +
+    // A successful include renders without chrome (matching GitBook), so the
+    // renderer emits a hidden marker span purely for this probe; mentions are
+    // plain spans. Without these, a page whose only GitBook features are
+    // includes/mentions would never be detected and lose the gated styling
+    // (expand cards, Inter).
+    '.gb-mention, .gb-include-marker';
 
   function markDocument() {
     if (document.querySelector(GITBOOK_MARKUP)) {

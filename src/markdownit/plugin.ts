@@ -157,12 +157,17 @@ function renderInclude(md: MarkdownIt, readFile: FileReader): RenderRule {
       return `${renderIncludeError(result.reason)}\n`;
     }
 
-    return md.render(result.content, {
+    const rendered = md.render(result.content, {
       ...renderEnv,
       currentDocument: nestedDocument(renderEnv.currentDocument, result.absolutePath),
       gbIncludeStack: [...stack, result.absolutePath],
       gbNested: true,
     });
+    // GitBook splices includes with no visible chrome. The hidden marker exists
+    // solely so preview.js can detect that this page uses GitBook features —
+    // successful include output would otherwise be indistinguishable from
+    // plain markdown.
+    return `<span class="gb-include-marker" hidden aria-hidden="true"></span>${rendered}`;
   };
 }
 

@@ -246,6 +246,16 @@ describe('gitbook document detection', () => {
     return dom.window.document;
   }
 
+  it('marks the body when the only gitbook feature is a mention link', () => {
+    const doc = bootWith('<p><a href="task.md" title="mention"><span class="gb-mention">Title</span></a></p>');
+    expect(doc.body.hasAttribute('data-gb-doc')).toBe(true);
+  });
+
+  it('marks the body when the only gitbook feature is a successful include', () => {
+    const doc = bootWith('<span class="gb-include-marker" hidden aria-hidden="true"></span><p>Included body.</p>');
+    expect(doc.body.hasAttribute('data-gb-doc')).toBe(true);
+  });
+
   it('marks the body when the document contains gitbook markup', () => {
     const doc = bootWith('<div class="gb-hint gb-hint--info"><div class="gb-hint__body"></div></div>');
     expect(doc.body.hasAttribute('data-gb-doc')).toBe(true);

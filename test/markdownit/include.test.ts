@@ -53,6 +53,13 @@ describe('include', () => {
     expect(html).not.toContain('gb-include-error');
   });
 
+  it('emits a hidden detection marker before the spliced content', () => {
+    const html = renderLikeVsCode(md, '{% include "../../.gitbook/includes/note.md" %}', env());
+    const marker = html.indexOf('<span class="gb-include-marker" hidden aria-hidden="true"></span>');
+    expect(marker).toBeGreaterThanOrEqual(0);
+    expect(marker).toBeLessThan(html.indexOf('<h1>Note</h1>'));
+  });
+
   it('strips front matter from the included file', () => {
     expect(renderLikeVsCode(md, '{% include "../../.gitbook/includes/note.md" %}', env())).not.toContain('title: Note');
   });
