@@ -3,6 +3,12 @@ import type { RenderContext, RenderEnv, TagRenderer } from '../context';
 import { escapeHtml } from '../context';
 
 interface TabsEnv extends RenderEnv {
+  /**
+   * Position of the next tab within the current group. A single counter
+   * assumes flat groups only: tabs nested inside a tab would clobber it.
+   * GitBook itself does not support nested tabs, so a stack is deliberately
+   * not built here.
+   */
   gbTabIndex?: number;
 }
 
@@ -11,7 +17,10 @@ export const tabsRenderer: TagRenderer = {
     (ctx.env as TabsEnv).gbTabIndex = 0;
     return '<div class="gb-tabs" data-gb-tabs><div class="gb-tabs__strip" role="tablist"></div>';
   },
-  close(): string {
+  close(_tag: GitBookTag, ctx: RenderContext): string {
+    // Clear the counter so a stray {% tab %} after a closed group starts at
+    // index 0 (visible) instead of inheriting a stale index and hiding itself.
+    delete (ctx.env as TabsEnv).gbTabIndex;
     return '</div>';
   },
 };
