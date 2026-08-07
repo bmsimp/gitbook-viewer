@@ -7,6 +7,13 @@ export const MAX_INCLUDE_DEPTH = 5;
 /** Total expansions allowed per render, bounding diamond-shaped graphs. */
 export const MAX_INCLUDE_TOTAL = 100;
 
+// Same normalization markdown-it's core `normalize` rule applies to the root
+// document. Included content is spliced via `md.block.parse`, which bypasses
+// core rules, so without this a CRLF include never has truly blank lines and
+// e.g. a leading <details> html_block swallows the whole file verbatim.
+const NEWLINES_RE = /\r\n?|\u2028|\u2029/g;
+const NULL_RE = /\u0000/g;
+
 export type IncludeResult =
   | { ok: true; absolutePath: string; content: string }
   | { ok: false; reason: string };
@@ -53,5 +60,6 @@ export function resolveInclude(
   }
 
   ctx.env.gbIncludeCount = count + 1;
-  return { ok: true, absolutePath, content: stripFrontMatter(content) };
+  const normalized = content.replace(NEWLINES_RE, '\n').replace(NULL_RE, '\uFFFD');
+  return { ok: true, absolutePath, content: stripFrontMatter(normalized) };
 }

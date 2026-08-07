@@ -10,6 +10,12 @@ const FILES: Record<string, string> = {
   // Root-document cycle: back.md includes the document being rendered.
   '/repo/docs/setup/index.md': 'Root body.\n\n{% include "../../.gitbook/includes/back.md" %}\n',
   '/repo/.gitbook/includes/back.md': '{% include "../../docs/setup/index.md" %}\n',
+  // CRLF include whose leading html block must still end at the blank line;
+  // without newline normalization block.parse (which bypasses the core
+  // normalize rule) treats "\r" lines as non-blank and the <details> block
+  // swallows the whole file, leaving the hint raw.
+  '/repo/.gitbook/includes/crlf.md':
+    '<details>\r\n\r\n<summary>More</summary>\r\n\r\n{% hint style="info" %}\r\nInside.\r\n{% endhint %}\r\n\r\n</details>\r\n',
   // Rebase-origin fixtures in two different directories.
   '/repo/a/outer2.md': 'Link out.\n\n{% include "../b/inner2.md" %}\n',
   '/repo/b/inner2.md': 'See [docs](./ref.md).\n',
@@ -44,6 +50,12 @@ describe('include', () => {
 
   it('strips front matter from the included file', () => {
     expect(md.render('{% include "../../.gitbook/includes/note.md" %}', env())).not.toContain('title: Note');
+  });
+
+  it('normalizes CRLF include content so tags inside html blocks still render', () => {
+    const html = md.render('{% include "../../.gitbook/includes/crlf.md" %}', env());
+    expect(html).toContain('gb-hint');
+    expect(html).not.toContain('{% hint');
   });
 
   it('renders a visible error box when the target is missing', () => {
