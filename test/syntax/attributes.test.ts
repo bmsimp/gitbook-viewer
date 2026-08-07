@@ -47,4 +47,11 @@ describe('parseAttributes', () => {
       positional: [],
     });
   });
+
+  it('bails on oversized attribute text instead of backtracking quadratically', () => {
+    const start = performance.now();
+    const result = parseAttributes(`x${'a'.repeat(100_000)}`);
+    expect(performance.now() - start).toBeLessThan(50);
+    expect(result).toEqual({ named: {}, positional: [] });
+  });
 });
