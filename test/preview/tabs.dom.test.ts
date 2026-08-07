@@ -256,6 +256,22 @@ describe('gitbook document detection', () => {
     expect(doc.body.hasAttribute('data-gb-doc')).toBe(false);
   });
 
+  it('sets the forced scheme on the body when a scheme marker is present', () => {
+    const doc = bootWith(
+      '<div data-gb-scheme-marker="dark" style="display:none"></div><div class="gb-hint"></div>',
+    );
+    expect(doc.body.getAttribute('data-gb-scheme')).toBe('dark');
+  });
+
+  it('removes the forced scheme when no marker is present', () => {
+    const dom = new JSDOM('<body data-gb-scheme="dark"><div class="gb-hint"></div></body>', {
+      runScripts: 'outside-only',
+    });
+    dom.window.eval(SCRIPT);
+    dom.window.document.dispatchEvent(new dom.window.Event('DOMContentLoaded'));
+    expect(dom.window.document.body.hasAttribute('data-gb-scheme')).toBe(false);
+  });
+
   it('clears the mark when a re-render removes all gitbook markup', async () => {
     const dom = new JSDOM('<body><div class="gb-hint"></div></body>', {
       runScripts: 'outside-only',

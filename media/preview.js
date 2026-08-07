@@ -91,6 +91,16 @@
     } else {
       document.body.removeAttribute('data-gb-doc');
     }
+
+    // The extension host cannot script the preview directly (Strict security
+    // strips scripts from rendered content), so a forced colour scheme travels
+    // as a hidden marker element prepended to the rendered HTML.
+    var schemeMarker = document.querySelector('[data-gb-scheme-marker]');
+    if (schemeMarker) {
+      document.body.setAttribute('data-gb-scheme', schemeMarker.getAttribute('data-gb-scheme-marker'));
+    } else {
+      document.body.removeAttribute('data-gb-scheme');
+    }
   }
 
   // Nested tab groups are unsupported: groups are matched by a flat

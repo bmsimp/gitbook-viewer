@@ -1,1 +1,99 @@
-{}
+{
+  "GitBook hint": {
+    "prefix": "gb-hint",
+    "body": [
+      "{% hint style=\"${1|info,warning,danger,success|}\" %}",
+      "$0",
+      "{% endhint %}"
+    ],
+    "description": "GitBook callout box (choose a style)"
+  },
+  "GitBook warning hint": {
+    "prefix": "gb-hint-warning",
+    "body": [
+      "{% hint style=\"warning\" %}",
+      "$0",
+      "{% endhint %}"
+    ],
+    "description": "GitBook warning callout"
+  },
+  "GitBook danger hint": {
+    "prefix": "gb-hint-danger",
+    "body": [
+      "{% hint style=\"danger\" %}",
+      "$0",
+      "{% endhint %}"
+    ],
+    "description": "GitBook danger callout"
+  },
+  "GitBook success hint": {
+    "prefix": "gb-hint-success",
+    "body": [
+      "{% hint style=\"success\" %}",
+      "$0",
+      "{% endhint %}"
+    ],
+    "description": "GitBook success callout"
+  },
+  "GitBook stepper": {
+    "prefix": "gb-stepper",
+    "body": [
+      "{% stepper %}",
+      "{% step %}",
+      "$0",
+      "{% endstep %}",
+      "{% endstepper %}"
+    ],
+    "description": "GitBook numbered steps"
+  },
+  "GitBook tabs": {
+    "prefix": "gb-tabs",
+    "body": [
+      "{% tabs %}",
+      "{% tab title=\"${1:Title}\" %}",
+      "$0",
+      "{% endtab %}",
+      "{% endtabs %}"
+    ],
+    "description": "GitBook tab group"
+  },
+  "GitBook content-ref": {
+    "prefix": "gb-content-ref",
+    "body": [
+      "{% content-ref url=\"${1:page.md}\" %}",
+      "[${1:page.md}](${1:page.md})",
+      "{% endcontent-ref %}"
+    ],
+    "description": "GitBook page reference card"
+  },
+  "GitBook code block": {
+    "prefix": "gb-code",
+    "body": [
+      "{% code overflow=\"wrap\" %}",
+      "$0",
+      "{% endcode %}"
+    ],
+    "description": "GitBook code wrapper"
+  },
+  "GitBook include": {
+    "prefix": "gb-include",
+    "body": [
+      "{% include \"${1:../.gitbook/includes/file.md}\" %}"
+    ],
+    "description": "GitBook reusable content include"
+  },
+  "GitBook embed": {
+    "prefix": "gb-embed",
+    "body": [
+      "{% embed url=\"${1:https://}\" %}"
+    ],
+    "description": "GitBook embedded link card"
+  },
+  "GitBook file": {
+    "prefix": "gb-file",
+    "body": [
+      "{% file src=\"${1:../.gitbook/assets/file.pdf}\" %}"
+    ],
+    "description": "GitBook downloadable file card"
+  }
+}
