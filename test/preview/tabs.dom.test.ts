@@ -176,3 +176,39 @@ describe('preview tab script', () => {
     }).not.toThrow();
   });
 });
+
+describe('gitbook document detection', () => {
+  function bootWith(html: string): Document {
+    const dom = new JSDOM(`<body>${html}</body>`, { runScripts: 'outside-only' });
+    dom.window.eval(SCRIPT);
+    dom.window.document.dispatchEvent(new dom.window.Event('DOMContentLoaded'));
+    return dom.window.document;
+  }
+
+  it('marks the body when the document contains gitbook markup', () => {
+    const doc = bootWith('<div class="gb-hint gb-hint--info"><div class="gb-hint__body"></div></div>');
+    expect(doc.body.hasAttribute('data-gb-doc')).toBe(true);
+  });
+
+  it('leaves a plain markdown document unmarked', () => {
+    const doc = bootWith('<h1>Plain</h1><p>No gitbook blocks here.</p>');
+    expect(doc.body.hasAttribute('data-gb-doc')).toBe(false);
+  });
+
+  it('clears the mark when a re-render removes all gitbook markup', async () => {
+    const dom = new JSDOM('<body><div class="gb-hint"></div></body>', {
+      runScripts: 'outside-only',
+    });
+    // Wait for the document to finish loading so the re-injected script runs
+    // build() immediately off readyState, the same path a real webview takes.
+    await new Promise<void>((resolve) => {
+      dom.window.addEventListener('load', () => resolve());
+    });
+    dom.window.eval(SCRIPT);
+    expect(dom.window.document.body.hasAttribute('data-gb-doc')).toBe(true);
+
+    dom.window.document.body.innerHTML = '<p>plain now</p>';
+    dom.window.eval(SCRIPT);
+    expect(dom.window.document.body.hasAttribute('data-gb-doc')).toBe(false);
+  });
+});

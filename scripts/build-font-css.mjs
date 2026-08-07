@@ -22,5 +22,5 @@ const blocks = await Promise.all(
   }),
 );
 
-await writeFile('media/fonts.css', `${blocks.join('\n\n')}\n`, 'utf8');
+await writeFile(new URL('../media/fonts.css', import.meta.url), `${blocks.join('\n\n')}\n`, 'utf8');
 console.log(`media/fonts.css written (${blocks.length} faces)`);

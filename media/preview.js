@@ -72,7 +72,27 @@
     return -1;
   }
 
+  /**
+   * Mark the body when the rendered document contains GitBook markup so the
+   * stylesheet can scope document-wide styling (the Inter font) to GitBook
+   * pages without leaking into plain markdown previews. The selector list names
+   * the renderers' top-level classes precisely rather than sniffing with
+   * [class*="gb-"], which would also match unrelated classes like "rgb-swatch".
+   */
+  var GITBOOK_MARKUP =
+    '[data-gb-tabs], .gb-hint, .gb-stepper, .gb-content-ref, .gb-file, ' +
+    '.gb-embed, .gb-code, .gb-page-header, .gb-include-error';
+
+  function markDocument() {
+    if (document.querySelector(GITBOOK_MARKUP)) {
+      document.body.setAttribute('data-gb-doc', '');
+    } else {
+      document.body.removeAttribute('data-gb-doc');
+    }
+  }
+
   function build() {
+    markDocument();
     document.querySelectorAll('[data-gb-tabs]').forEach(function (group, groupIndex) {
       var strip = group.querySelector('.gb-tabs__strip');
       if (!strip || strip.childElementCount > 0) {
