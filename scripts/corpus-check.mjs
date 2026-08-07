@@ -95,7 +95,20 @@ for (const file of files) {
   let html;
   try {
     const source = fs.readFileSync(file, 'utf8');
-    html = md.render(source, { currentDocument: { fsPath: file } });
+    // Mirror VS Code's markdown preview: it tokenizes with an env that has no
+    // currentDocument (those tokens are cached per document) and only supplies
+    // the real env to the renderer. Rendering with md.render() here would hide
+    // every bug caused by that split.
+    const tokens = md.parse(source, {
+      currentDocument: undefined,
+      containingImages: new Set(),
+      resourceProvider: undefined,
+    });
+    html = md.renderer.render(tokens, md.options, {
+      currentDocument: { fsPath: file },
+      containingImages: new Set(),
+      resourceProvider: undefined,
+    });
   } catch (error) {
     crashes.push({ file, error: String(error && error.stack ? error.stack : error) });
     continue;

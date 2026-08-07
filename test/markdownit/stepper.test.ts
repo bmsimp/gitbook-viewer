@@ -1,12 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import MarkdownIt from 'markdown-it';
 import { gitbookPlugin } from '../../src/markdownit/plugin';
+import { renderLikeVsCode } from '../helpers/render';
 
 const md = gitbookPlugin(new MarkdownIt({ html: true }));
 
 describe('stepper renderer', () => {
   it('emits a stepper wrapper with one element per step', () => {
-    const html = md.render(
+    const html = renderLikeVsCode(md, 
       ['{% stepper %}', '{% step %}', 'First', '{% endstep %}', '{% step %}', 'Second', '{% endstep %}', '{% endstepper %}'].join('\n'),
     );
     expect(html).toContain('<div class="gb-stepper">');
@@ -16,12 +17,12 @@ describe('stepper renderer', () => {
   });
 
   it('renders headings inside a step', () => {
-    const html = md.render(['{% stepper %}', '{% step %}', '### Do the thing', '{% endstep %}', '{% endstepper %}'].join('\n'));
+    const html = renderLikeVsCode(md, ['{% stepper %}', '{% step %}', '### Do the thing', '{% endstep %}', '{% endstepper %}'].join('\n'));
     expect(html).toContain('<h3>Do the thing</h3>');
   });
 
   it('does not emit step numbers in markup', () => {
-    const html = md.render(['{% stepper %}', '{% step %}', 'x', '{% endstep %}', '{% endstepper %}'].join('\n'));
+    const html = renderLikeVsCode(md, ['{% stepper %}', '{% step %}', 'x', '{% endstep %}', '{% endstepper %}'].join('\n'));
     expect(html).not.toMatch(/>\s*1\s*</);
   });
 });
