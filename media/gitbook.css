@@ -1,0 +1,159 @@
+/* Palette read from https://docs.cipp.app (GitBook's live CSS). Values are RGB
+   triplets so they compose with alpha via rgb(var(--x) / <alpha>). */
+body {
+  --gb-info-bg: 247 247 247;   --gb-info-border: 229 229 229;
+  --gb-info-text: 110 110 110; --gb-info-accent: 120 120 120;
+  --gb-warning-bg: 255 245 236;   --gb-warning-border: 250 224 200;
+  --gb-warning-text: 138 102 66;  --gb-warning-accent: 254 154 0;
+  --gb-danger-bg: 255 242 239;    --gb-danger-border: 255 215 210;
+  --gb-danger-text: 158 87 81;    --gb-danger-accent: 251 44 54;
+  --gb-success-bg: 238 252 240;   --gb-success-border: 207 240 210;
+  --gb-success-text: 74 124 82;   --gb-success-accent: 0 201 80;
+  --gb-tint-base: 255 255 255;    --gb-tint-subtle: 229 229 229;
+  --gb-tint-text: 29 29 29;       --gb-tint-muted: 110 110 110;
+}
+
+body.vscode-dark,
+body.vscode-high-contrast:not(.vscode-high-contrast-light) {
+  --gb-info-bg: 44 44 44;      --gb-info-border: 57 57 57;
+  --gb-info-text: 192 192 192; --gb-info-accent: 120 120 120;
+  --gb-warning-bg: 50 42 35;      --gb-warning-border: 73 53 33;
+  --gb-warning-text: 224 184 145; --gb-warning-accent: 254 154 0;
+  --gb-danger-bg: 55 39 38;       --gb-danger-border: 84 45 41;
+  --gb-danger-text: 248 168 161;  --gb-danger-accent: 251 44 54;
+  --gb-success-bg: 37 47 38;      --gb-success-border: 38 65 41;
+  --gb-success-text: 155 208 161; --gb-success-accent: 0 201 80;
+  --gb-tint-base: 29 29 29;    --gb-tint-subtle: 57 57 57;
+  --gb-tint-text: 237 237 237; --gb-tint-muted: 144 144 144;
+}
+
+/* gitbookViewer.colorScheme=light|dark overrides both blocks above. */
+body[data-gb-scheme='light'] {
+  --gb-info-bg: 247 247 247;   --gb-info-border: 229 229 229;
+  --gb-info-text: 110 110 110; --gb-info-accent: 120 120 120;
+  --gb-warning-bg: 255 245 236;   --gb-warning-border: 250 224 200;
+  --gb-warning-text: 138 102 66;  --gb-warning-accent: 254 154 0;
+  --gb-danger-bg: 255 242 239;    --gb-danger-border: 255 215 210;
+  --gb-danger-text: 158 87 81;    --gb-danger-accent: 251 44 54;
+  --gb-success-bg: 238 252 240;   --gb-success-border: 207 240 210;
+  --gb-success-text: 74 124 82;   --gb-success-accent: 0 201 80;
+  --gb-tint-base: 255 255 255;    --gb-tint-subtle: 229 229 229;
+  --gb-tint-text: 29 29 29;       --gb-tint-muted: 110 110 110;
+}
+
+body[data-gb-scheme='dark'] {
+  --gb-info-bg: 44 44 44;      --gb-info-border: 57 57 57;
+  --gb-info-text: 192 192 192; --gb-info-accent: 120 120 120;
+  --gb-warning-bg: 50 42 35;      --gb-warning-border: 73 53 33;
+  --gb-warning-text: 224 184 145; --gb-warning-accent: 254 154 0;
+  --gb-danger-bg: 55 39 38;       --gb-danger-border: 84 45 41;
+  --gb-danger-text: 248 168 161;  --gb-danger-accent: 251 44 54;
+  --gb-success-bg: 37 47 38;      --gb-success-border: 38 65 41;
+  --gb-success-text: 155 208 161; --gb-success-accent: 0 201 80;
+  --gb-tint-base: 29 29 29;    --gb-tint-subtle: 57 57 57;
+  --gb-tint-text: 237 237 237; --gb-tint-muted: 144 144 144;
+}
+
+body {
+  font-family: 'GitBook Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+/* Hints */
+.gb-hint {
+  display: flex;
+  gap: 0.75rem;
+  margin: 1rem 0;
+  padding: 0.875rem 1rem;
+  border-radius: 0.5rem;
+  background: rgb(var(--gb-info-bg));
+  border: 1px solid rgb(var(--gb-info-border));
+  border-left: 3px solid rgb(var(--gb-info-accent));
+  color: rgb(var(--gb-tint-text));
+}
+.gb-hint__icon { flex: 0 0 auto; padding-top: 0.1rem; color: rgb(var(--gb-info-accent)); }
+.gb-hint__body { min-width: 0; }
+.gb-hint__body > :first-child { margin-top: 0; }
+.gb-hint__body > :last-child { margin-bottom: 0; }
+
+/* `--info` is the default variant; the base .gb-hint rule above already carries
+   the info palette. This selector exists so every renderer-emitted class has an
+   explicit rule. */
+.gb-hint--info { background: rgb(var(--gb-info-bg)); border-color: rgb(var(--gb-info-border)); border-left-color: rgb(var(--gb-info-accent)); }
+.gb-hint--info .gb-hint__icon { color: rgb(var(--gb-info-accent)); }
+.gb-hint--warning { background: rgb(var(--gb-warning-bg)); border-color: rgb(var(--gb-warning-border)); border-left-color: rgb(var(--gb-warning-accent)); }
+.gb-hint--warning .gb-hint__icon { color: rgb(var(--gb-warning-accent)); }
+.gb-hint--danger { background: rgb(var(--gb-danger-bg)); border-color: rgb(var(--gb-danger-border)); border-left-color: rgb(var(--gb-danger-accent)); }
+.gb-hint--danger .gb-hint__icon { color: rgb(var(--gb-danger-accent)); }
+.gb-hint--success { background: rgb(var(--gb-success-bg)); border-color: rgb(var(--gb-success-border)); border-left-color: rgb(var(--gb-success-accent)); }
+.gb-hint--success .gb-hint__icon { color: rgb(var(--gb-success-accent)); }
+
+/* Stepper: numbers come from a counter so they survive re-render. */
+.gb-stepper { counter-reset: gb-step; margin: 1.25rem 0; }
+.gb-step { position: relative; display: flex; gap: 1rem; padding-bottom: 1.25rem; }
+.gb-step__marker {
+  counter-increment: gb-step;
+  flex: 0 0 1.75rem;
+  height: 1.75rem;
+  border-radius: 999px;
+  background: rgb(var(--gb-tint-subtle));
+  color: rgb(var(--gb-tint-text));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.8125rem; font-weight: 600;
+}
+.gb-step__marker::before { content: counter(gb-step); }
+.gb-step:not(:last-child)::before {
+  content: ''; position: absolute; left: 0.875rem; top: 1.75rem; bottom: 0;
+  width: 1px; background: rgb(var(--gb-tint-subtle));
+}
+.gb-step__body { min-width: 0; flex: 1; }
+.gb-step__body > :first-child { margin-top: 0; }
+
+/* Tabs. Panel visibility is driven by the `hidden` attribute (single source of
+   truth); data-gb-active exists as a JS hook and is deliberately unstyled. */
+.gb-tabs { margin: 1.25rem 0; border: 1px solid rgb(var(--gb-tint-subtle)); border-radius: 0.5rem; overflow: hidden; }
+.gb-tabs__strip { display: flex; gap: 0; border-bottom: 1px solid rgb(var(--gb-tint-subtle)); overflow-x: auto; }
+.gb-tabs__button {
+  appearance: none; background: none; border: none; cursor: pointer;
+  padding: 0.6rem 1rem; font: inherit; font-size: 0.875rem;
+  color: rgb(var(--gb-tint-muted)); border-bottom: 2px solid transparent; white-space: nowrap;
+}
+.gb-tabs__button[aria-selected='true'] { color: rgb(var(--gb-tint-text)); border-bottom-color: rgb(var(--gb-tint-text)); font-weight: 500; }
+.gb-tabs__tab { padding: 0.875rem 1rem; }
+.gb-tabs__tab > :first-child { margin-top: 0; }
+.gb-tabs__tab > :last-child { margin-bottom: 0; }
+
+/* Cards */
+.gb-content-ref, .gb-file, .gb-embed {
+  display: flex; align-items: center; gap: 0.75rem;
+  margin: 0.75rem 0; padding: 0.875rem 1rem;
+  border: 1px solid rgb(var(--gb-tint-subtle)); border-radius: 0.5rem;
+  text-decoration: none; color: rgb(var(--gb-tint-text));
+}
+.gb-content-ref:hover, .gb-file:hover, .gb-embed:hover { border-color: rgb(var(--gb-tint-muted)); }
+.gb-content-ref__text { display: flex; flex-direction: column; gap: 0.15rem; flex: 1; min-width: 0; }
+.gb-content-ref__title, .gb-file__name, .gb-embed__host { font-weight: 500; }
+.gb-content-ref__desc, .gb-embed__url { font-size: 0.8125rem; color: rgb(var(--gb-tint-muted)); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gb-content-ref__arrow { flex: 0 0 auto; color: rgb(var(--gb-tint-muted)); }
+/* Hidden fallback body kept next to the card; `hidden` is the display mechanism
+   and this rule only guards against a host sheet resetting it. */
+.gb-content-ref__body[hidden] { display: none; }
+.gb-embed { flex-direction: column; align-items: flex-start; gap: 0.2rem; }
+.gb-file__icon { color: rgb(var(--gb-tint-muted)); display: flex; }
+
+/* Code wrapping */
+.gb-code { margin: 1rem 0; }
+.gb-code > pre { margin: 0; }
+.gb-code--wrap pre code { white-space: pre-wrap; overflow-wrap: anywhere; }
+
+/* Page header */
+.gb-page-header { margin-bottom: 1.5rem; }
+/* Empty element; the glyph for data-gb-icon is supplied by the preview script. */
+.gb-page-header__icon { font-size: 2rem; line-height: 1; margin-bottom: 0.5rem; color: rgb(var(--gb-tint-muted)); }
+.gb-page-header__desc { color: rgb(var(--gb-tint-muted)); font-size: 1.05rem; margin: 0.25rem 0 0; }
+
+/* Include failure */
+.gb-include-error {
+  margin: 1rem 0; padding: 0.75rem 1rem; border-radius: 0.5rem;
+  background: rgb(var(--gb-danger-bg)); border: 1px solid rgb(var(--gb-danger-border));
+  color: rgb(var(--gb-danger-text)); font-size: 0.875rem;
+}
