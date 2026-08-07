@@ -5,6 +5,7 @@ import { renderers } from './renderers';
 import { defaultFileReader } from './fileReader';
 import { resolveInclude } from './includeResolver';
 import { renderIncludeError } from './renderers/include';
+import { rebasePlugin } from './rebase';
 import type { FileReader, GitBookToken, RenderContext, RenderEnv } from './context';
 
 // See the note in context.ts: the CJS build must use the namespace types from
@@ -41,6 +42,8 @@ export function gitbookPlugin(md: MarkdownIt, options: PluginOptions = {}): Mark
 
   md.renderer.rules.gitbook_open = render('open');
   md.renderer.rules.gitbook_close = render('close');
+
+  rebasePlugin(md);
 
   return md;
 }
