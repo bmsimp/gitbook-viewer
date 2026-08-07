@@ -1,5 +1,5 @@
 import type MarkdownIt from 'markdown-it';
-import { scanLine } from '../syntax/scanner';
+import { OPTIONAL_CLOSE_TAGS, scanLine } from '../syntax/scanner';
 import { renderers } from './renderers';
 import { defaultFileReader } from './fileReader';
 import type { FileReader, GitBookToken, RenderContext, RenderEnv } from './context';
@@ -67,7 +67,12 @@ function createRule() {
     }
 
     const type = tag.kind === 'close' ? 'gitbook_close' : 'gitbook_open';
-    const token = state.push(type, '', tag.kind === 'close' ? -1 : 1) as GitBookToken;
+    // Tags like `{% file %}` and `{% embed %}` are conventionally written
+    // without end tags; their renderers emit self-contained markup from
+    // open(), so both their opens and (occasional) explicit closes must not
+    // shift nesting.
+    const nesting = OPTIONAL_CLOSE_TAGS.has(tag.name) ? 0 : tag.kind === 'close' ? -1 : 1;
+    const token = state.push(type, '', nesting as 0 | 1 | -1) as GitBookToken;
     token.gbTag = tag;
     token.map = [startLine, startLine + 1];
     token.block = true;
