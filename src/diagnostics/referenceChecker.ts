@@ -1,13 +1,19 @@
 import {
   KNOWN_TAGS,
   REQUIRED_CLOSE_TAGS,
+  isIntegrationTag,
   scan,
   type GitBookTag,
 } from '../syntax/scanner';
 import { pathModuleFor } from '../markdownit/paths';
 
 export type IssueSeverity = 'error' | 'warning' | 'information';
-export type IssueCode = 'missing-target' | 'unbalanced' | 'unknown-tag' | 'outside-workspace';
+export type IssueCode =
+  | 'missing-target'
+  | 'unbalanced'
+  | 'unknown-tag'
+  | 'outside-workspace'
+  | 'integration-url';
 
 export interface Issue {
   severity: IssueSeverity;
@@ -64,6 +70,26 @@ export function checkReferences(
   const baseDir = path.dirname(documentPath);
 
   for (const tag of tags) {
+    // Integration blocks are implicitly known (any @vendor/block is valid) and
+    // standalone, so they neither fire unknown-tag nor join the balancing
+    // stack. Their url is a remote embed target, not a filesystem path; the
+    // only static check is that a linkable http(s) url is present.
+    if (isIntegrationTag(tag.name)) {
+      if (tag.kind !== 'close') {
+        const url = tag.named.url;
+        if (!url) {
+          issues.push(
+            issueAt(tag, 'information', 'integration-url', `Integration block "${tag.name}" has no url.`),
+          );
+        } else if (!/^https?:\/\//i.test(url)) {
+          issues.push(
+            issueAt(tag, 'information', 'integration-url', `Integration block "${tag.name}" has a non-http url: ${url}`),
+          );
+        }
+      }
+      continue;
+    }
+
     if (!KNOWN_TAGS.has(tag.name)) {
       issues.push(issueAt(tag, 'information', 'unknown-tag', `Unknown GitBook tag "${tag.name}".`));
       continue;

@@ -1,11 +1,12 @@
 import type MarkdownIt from 'markdown-it';
-import { OPTIONAL_CLOSE_TAGS, scanLine } from '../syntax/scanner';
+import { OPTIONAL_CLOSE_TAGS, isIntegrationTag, scanLine } from '../syntax/scanner';
 import { renderers } from './renderers';
 import { defaultFileReader } from './fileReader';
 import { resolveInclude } from './includeResolver';
 import { renderIncludeError } from './renderers/include';
 import { pageHeaderPlugin, type DocumentTextReader } from './pageHeader';
 import { mentionPlugin } from './mention';
+import { escapeHtml } from './context';
 import type { FileReader, GitBookToken, RenderContext, RenderEnv } from './context';
 
 // See the note in context.ts: the CJS build must use the namespace types from
@@ -56,6 +57,7 @@ export function gitbookPlugin(md: MarkdownIt, options: PluginOptions = {}): Mark
   md.renderer.rules.gitbook_open = render('open');
   md.renderer.rules.gitbook_close = render('close');
   md.renderer.rules.gitbook_include = renderInclude(md, readFile);
+  md.renderer.rules.gitbook_integration = renderIntegration(md);
 
   pageHeaderPlugin(md, readFile, options.readDocumentText);
   mentionPlugin(md, readFile);
@@ -102,6 +104,23 @@ function gitbookTagRule(
     return true;
   }
 
+  // Integration blocks ({% @vendor/block %}) render as placeholder cards.
+  // Routed before the registry check: no per-vendor renderer exists, one rule
+  // handles every vendor. The (corpus-absent) `end@vendor/block` form scans as
+  // kind 'close' and deliberately falls through to the registry miss below, so
+  // it stays literal text rather than emitting a second card.
+  if (isIntegrationTag(tag.name) && tag.kind !== 'close') {
+    if (silent) {
+      return true;
+    }
+    const token = state.push('gitbook_integration', '', 0) as GitBookToken;
+    token.gbTag = tag;
+    token.map = [startLine, startLine + 1];
+    token.block = true;
+    state.line = startLine + 1;
+    return true;
+  }
+
   if (!renderers[tag.name]) {
     return false;
   }
@@ -123,6 +142,48 @@ function gitbookTagRule(
 
   state.line = startLine + 1;
   return true;
+}
+
+/** Small circled-triangle play glyph for the storylane badge (currentColor). */
+const PLAY_BADGE =
+  '<span class="gb-integration__badge" aria-hidden="true">' +
+  '<svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor">' +
+  '<path d="M3 1.8 10 6 3 10.2Z"/></svg></span>';
+
+/**
+ * Integration blocks render as placeholder cards, never iframes: the markdown
+ * preview's CSP forbids embedding third-party frames, so the card links out to
+ * the vendor url instead. Like the other renderers, an unsafe or missing url
+ * loses the link but the card still shows — an integration block must never
+ * silently disappear or survive as literal `{% ... %}` text.
+ */
+function renderIntegration(md: MarkdownIt): RenderRule {
+  return (tokens: Token[], idx: number): string => {
+    const tag = (tokens[idx] as GitBookToken).gbTag;
+    if (!tag) {
+      return '';
+    }
+
+    const url = tag.named.url ?? '';
+    const linked = url !== '' && md.validateLink(url);
+    const storylane = tag.name === '@storylane/embed';
+
+    const classes = storylane ? 'gb-integration gb-integration--storylane' : 'gb-integration';
+    const title = storylane ? 'Interactive demo' : escapeHtml(tag.name);
+    const subtitle = storylane ? 'Storylane' : 'GitBook integration';
+    const detail = linked
+      ? `<span class="gb-integration__url">${escapeHtml(url)}</span>`
+      : '<span class="gb-integration__note">no url provided</span>';
+    const body =
+      `${storylane ? PLAY_BADGE : ''}<span class="gb-integration__text">` +
+      `<span class="gb-integration__title">${title}</span>` +
+      `<span class="gb-integration__subtitle">${subtitle}</span>` +
+      `${detail}</span>`;
+
+    return linked
+      ? `<a class="${classes}" href="${escapeHtml(url)}" target="_blank" rel="noreferrer">${body}</a>\n`
+      : `<div class="${classes}">${body}</div>\n`;
+  };
 }
 
 function renderInclude(md: MarkdownIt, readFile: FileReader): RenderRule {

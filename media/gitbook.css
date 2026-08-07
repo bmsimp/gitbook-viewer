@@ -53,7 +53,7 @@ body[data-gb-scheme] {
    preview.js, and a pure-CSS :has() over the same marker list — the latter is
    immune to the webview's DOM patcher scrubbing body attributes. */
 body[data-gb-doc],
-body:has(.gb-hint, .gb-stepper, [data-gb-tabs], .gb-content-ref, .gb-file, .gb-embed, .gb-code, .gb-page-header, .gb-include-error, .gb-mention, .gb-include-marker, a[data-mention]) {
+body:has(.gb-hint, .gb-stepper, [data-gb-tabs], .gb-content-ref, .gb-file, .gb-embed, .gb-integration, .gb-code, .gb-page-header, .gb-include-error, .gb-mention, .gb-include-marker, a[data-mention]) {
   font-family: 'GitBook Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
@@ -123,14 +123,14 @@ body:has(.gb-hint, .gb-stepper, [data-gb-tabs], .gb-content-ref, .gb-file, .gb-e
 .gb-tabs__tab > :last-child { margin-bottom: 0; }
 
 /* Cards */
-.gb-content-ref, .gb-file, .gb-embed {
+.gb-content-ref, .gb-file, .gb-embed, .gb-integration {
   display: flex; align-items: center; gap: 0.75rem;
   margin: 0.75rem 0; padding: 0.875rem 1rem;
   border: 1px solid rgb(var(--gb-tint-subtle)); border-radius: 0.5rem;
   background: rgb(var(--gb-tint-base));
   text-decoration: none; color: rgb(var(--gb-tint-text));
 }
-.gb-content-ref:hover, .gb-file:hover, .gb-embed:hover { border-color: rgb(var(--gb-tint-muted)); }
+.gb-content-ref:hover, .gb-file:hover, .gb-embed:hover, .gb-integration:hover { border-color: rgb(var(--gb-tint-muted)); }
 .gb-content-ref__text { display: flex; flex-direction: column; gap: 0.15rem; flex: 1; min-width: 0; }
 .gb-content-ref__title, .gb-file__name, .gb-embed__host { font-weight: 500; }
 .gb-content-ref__desc, .gb-embed__url { font-size: 0.8125rem; color: rgb(var(--gb-tint-muted)); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -141,6 +141,23 @@ body:has(.gb-hint, .gb-stepper, [data-gb-tabs], .gb-content-ref, .gb-file, .gb-e
 .gb-embed { flex-direction: column; align-items: flex-start; gap: 0.2rem; }
 .gb-embed__url { max-width: 100%; }
 .gb-file__icon { color: rgb(var(--gb-tint-muted)); display: flex; }
+
+/* Integration blocks ({% @vendor/block %}): placeholder cards linking out to
+   the vendor — the preview's CSP forbids the iframe GitBook itself would
+   embed. The base card chrome comes from the shared Cards rule above. */
+.gb-integration__badge {
+  flex: 0 0 auto;
+  display: flex; align-items: center; justify-content: center;
+  width: 1.75rem; height: 1.75rem; border-radius: 999px;
+  border: 1px solid rgb(var(--gb-tint-subtle));
+  color: rgb(var(--gb-tint-muted)); /* the inline play svg fills currentColor */
+}
+.gb-integration__text { display: flex; flex-direction: column; gap: 0.15rem; flex: 1; min-width: 0; }
+.gb-integration__title { font-weight: 500; }
+.gb-integration__subtitle, .gb-integration__url, .gb-integration__note {
+  font-size: 0.8125rem; color: rgb(var(--gb-tint-muted));
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
 
 /* Code wrapping */
 .gb-code { margin: 1rem 0; }

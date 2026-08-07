@@ -265,6 +265,14 @@ describe('gitbook document detection', () => {
     expect(doc.body.hasAttribute('data-gb-doc')).toBe(true);
   });
 
+  it('marks the body when the only gitbook feature is an integration card', () => {
+    const doc = bootWith(
+      '<a class="gb-integration gb-integration--storylane" href="https://app.storylane.io/share/x">' +
+        '<span class="gb-integration__title">Interactive demo</span></a>',
+    );
+    expect(doc.body.hasAttribute('data-gb-doc')).toBe(true);
+  });
+
   it('marks the body when the document contains gitbook markup', () => {
     const doc = bootWith('<div class="gb-hint gb-hint--info"><div class="gb-hint__body"></div></div>');
     expect(doc.body.hasAttribute('data-gb-doc')).toBe(true);

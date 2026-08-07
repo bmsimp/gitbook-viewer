@@ -64,6 +64,34 @@ describe('checkReferences', () => {
     expect(issues[0]).toMatchObject({ startCol: 2, endCol: 25 });
   });
 
+  it('accepts an integration block with an https url without unknown-tag noise', () => {
+    expect(check('{% @storylane/embed subdomain="app" url="https://app.storylane.io/share/x" %}\n')).toEqual([]);
+  });
+
+  it('reports an integration block with no url as information', () => {
+    const issues = check('{% @storylane/embed subdomain="app" %}\n');
+    expect(issues).toHaveLength(1);
+    expect(issues[0]).toMatchObject({ severity: 'information', code: 'integration-url', line: 0 });
+    expect(issues[0]!.message).toContain('no url');
+  });
+
+  it('reports an integration block with a non-http url as information', () => {
+    const issues = check('{% @storylane/embed url="ftp://x.test/a" %}\n');
+    expect(issues).toHaveLength(1);
+    expect(issues[0]).toMatchObject({ severity: 'information', code: 'integration-url' });
+    expect(issues[0]!.message).toContain('non-http');
+  });
+
+  it('keeps integration tags out of open/close balancing', () => {
+    const src = [
+      '{% hint style="info" %}',
+      '{% @storylane/embed url="https://x.test/a" %}',
+      '{% end@storylane/embed %}',
+      '{% endhint %}',
+    ].join('\n');
+    expect(check(src)).toEqual([]);
+  });
+
   it('flags an include resolving outside the workspace root when one is given', () => {
     const issues = checkReferences(
       '{% include "../../../etc/passwd" %}\n',

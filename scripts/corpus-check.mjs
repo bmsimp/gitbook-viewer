@@ -71,6 +71,7 @@ const KNOWN_MISSING_INCLUDES = ['ng-note.md', 'deploy-policy-expand.md'];
 const OUTPUT_MARKERS = [
   'gb-hint', 'gb-stepper', 'gb-tabs', 'gb-content-ref', 'gb-embed',
   'gb-file', 'gb-code', 'gb-page-header', 'gb-include-error', 'gb-mention',
+  'gb-integration',
 ];
 
 const markerCounts = Object.fromEntries(OUTPUT_MARKERS.map((m) => [m, 0]));
@@ -116,7 +117,10 @@ for (const file of files) {
   filesProcessed += 1;
 
   for (const marker of OUTPUT_MARKERS) {
-    const count = html.split(`class="${marker}`).length - 1;
+    // Whole-first-class matches only: `class="gb-embed"` and `class="gb-embed
+    // gb-embed--mod"` count, `class="gb-embed__url"` does not — the table
+    // counts rendered blocks, not their sub-elements.
+    const count = (html.match(new RegExp(`class="${marker}[" ]`, 'g')) ?? []).length;
     markerCounts[marker] += count;
   }
 
@@ -130,10 +134,13 @@ for (const file of files) {
 
   // Raw `{% tag %}` remnants outside code blocks.
   const scannable = stripCodeContent(html);
-  const tagRe = /\{%\s*(?:end)?([a-zA-Z][\w-]*)/g;
+  // Integration blocks (@vendor/block) are supported wholesale; a bare @name
+  // without the /block segment is deliberately left literal by the scanner
+  // and does not match here.
+  const tagRe = /\{%\s*(?:end)?(@[a-zA-Z][\w-]*\/[a-zA-Z][\w-]*|[a-zA-Z][\w-]*)/g;
   for (const match of scannable.matchAll(tagRe)) {
     const name = match[1];
-    if (SUPPORTED.has(name)) {
+    if (SUPPORTED.has(name) || name.startsWith('@')) {
       const at = match.index ?? 0;
       rawRemnantFailures.push({
         file: path.relative(corpusRoot, file),
