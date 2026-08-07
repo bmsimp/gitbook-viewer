@@ -1,0 +1,83 @@
+{
+  "name": "gitbook-viewer",
+  "displayName": "GitBook Viewer",
+  "description": "Renders GitBook block syntax in the native VS Code Markdown preview",
+  "version": "0.1.0",
+  "publisher": "bmsimp",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/bmsimp/gitbook-viewer.git"
+  },
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Visualization"
+  ],
+  "main": "./dist/extension.js",
+  "activationEvents": [
+    "onLanguage:markdown"
+  ],
+  "contributes": {
+    "markdown.markdownItPlugins": true,
+    "markdown.previewStyles": [
+      "./media/fonts.css",
+      "./media/gitbook.css"
+    ],
+    "markdown.previewScripts": [
+      "./media/preview.js"
+    ],
+    "snippets": [
+      {
+        "language": "markdown",
+        "path": "./snippets/gitbook.json"
+      }
+    ],
+    "configuration": {
+      "title": "GitBook Viewer",
+      "properties": {
+        "gitbookViewer.colorScheme": {
+          "type": "string",
+          "enum": [
+            "auto",
+            "light",
+            "dark"
+          ],
+          "default": "auto",
+          "description": "Which GitBook palette the preview uses. 'auto' follows the editor theme."
+        },
+        "gitbookViewer.diagnostics.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Report broken {% include %}, {% content-ref %}, {% file %}, and relative {% embed %} targets."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "build": "node esbuild.mjs",
+    "watch": "node esbuild.mjs --watch",
+    "fonts": "node scripts/build-font-css.mjs",
+    "compile": "npm run fonts && npm run build",
+    "test": "vitest run",
+    "corpus": "node scripts/corpus-check.mjs",
+    "typecheck": "tsc --noEmit",
+    "package": "npm run compile && vsce package",
+    "vscode:prepublish": "npm run compile"
+  },
+  "devDependencies": {
+    "@fontsource/inter": "^5.3.0",
+    "@types/jsdom": "^21.1.7",
+    "@types/markdown-it": "^14.1.2",
+    "@types/node": "^22.20.1",
+    "@types/vscode": "~1.90.0",
+    "@vscode/vsce": "^3.9.2",
+    "esbuild": "^0.24.2",
+    "jsdom": "^25.0.1",
+    "markdown-it": "^14.3.0",
+    "typescript": "^5.9.3",
+    "vitest": "^2.1.9"
+  }
+}
