@@ -48,9 +48,12 @@ body[data-gb-scheme] {
   color: rgb(var(--gb-tint-text));
 }
 
-/* Inter applies only to GitBook documents (preview.js sets data-gb-doc when it
-   finds GitBook markup) so plain markdown previews keep the default font. */
-body[data-gb-doc] {
+/* Inter applies only to GitBook documents so plain markdown previews keep the
+   default font. Two gates, either suffices: the data-gb-doc attribute set by
+   preview.js, and a pure-CSS :has() over the same marker list — the latter is
+   immune to the webview's DOM patcher scrubbing body attributes. */
+body[data-gb-doc],
+body:has(.gb-hint, .gb-stepper, [data-gb-tabs], .gb-content-ref, .gb-file, .gb-embed, .gb-code, .gb-page-header, .gb-include-error, .gb-mention, .gb-include-marker, a[data-mention]) {
   font-family: 'GitBook Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
@@ -159,15 +162,18 @@ body[data-gb-doc] {
 }
 
 /* Expand cards: GitBook renders raw <details>/<summary> HTML as bordered
-   expand cards. Scoped to data-gb-doc so plain markdown files keep the
+   expand cards. Unconditional: gating on the script-set data-gb-doc attribute
+   proved unreliable in the live webview (VS Code's DOM patcher can scrub body
+   attributes), and a styled details card in a non-GitBook file is harmless.
+   Previously: scoped so plain markdown files kept the
    browser-native widget. */
-body[data-gb-doc] details {
+details {
   margin: 0.75rem 0;
   border: 1px solid rgb(var(--gb-tint-subtle));
   border-radius: 0.5rem;
   background: rgb(var(--gb-tint-base));
 }
-body[data-gb-doc] summary {
+summary {
   display: flex;
   align-items: center;
   gap: 0.625rem;
@@ -178,8 +184,8 @@ body[data-gb-doc] summary {
   list-style: none;
   border-radius: 0.5rem;
 }
-body[data-gb-doc] summary::-webkit-details-marker { display: none; }
-body[data-gb-doc] summary::before {
+summary::-webkit-details-marker { display: none; }
+summary::before {
   content: '';
   flex: 0 0 auto;
   width: 0.4rem;
@@ -189,15 +195,15 @@ body[data-gb-doc] summary::before {
   transform: rotate(45deg); /* chevron pointing right */
   transition: transform 0.15s ease;
 }
-body[data-gb-doc] details[open] > summary::before {
+details[open] > summary::before {
   transform: rotate(135deg); /* chevron pointing down */
 }
-body[data-gb-doc] details > :not(summary) {
+details > :not(summary) {
   margin-left: 1rem;
   margin-right: 1rem;
 }
-body[data-gb-doc] details > :nth-child(2):not(summary) { margin-top: 0.25rem; }
-body[data-gb-doc] details > :last-child:not(summary) { margin-bottom: 1rem; }
+details > :nth-child(2):not(summary) { margin-top: 0.25rem; }
+details > :last-child:not(summary) { margin-bottom: 1rem; }
 
 /* GitBook "mention" links: the target title shown slightly emphasized in the
    standard link color (inherited from the anchor -- no color override). */
