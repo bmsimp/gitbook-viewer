@@ -157,3 +157,44 @@ body[data-gb-doc] {
   background: rgb(var(--gb-danger-bg)); border: 1px solid rgb(var(--gb-danger-border));
   color: rgb(var(--gb-danger-text)); font-size: 0.875rem;
 }
+
+/* Expand cards: GitBook renders raw <details>/<summary> HTML as bordered
+   expand cards. Scoped to data-gb-doc so plain markdown files keep the
+   browser-native widget. */
+body[data-gb-doc] details {
+  margin: 0.75rem 0;
+  border: 1px solid rgb(var(--gb-tint-subtle));
+  border-radius: 0.5rem;
+  background: rgb(var(--gb-tint-base));
+}
+body[data-gb-doc] summary {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.875rem 1rem;
+  cursor: pointer;
+  font-weight: 500;
+  color: rgb(var(--gb-tint-text));
+  list-style: none;
+  border-radius: 0.5rem;
+}
+body[data-gb-doc] summary::-webkit-details-marker { display: none; }
+body[data-gb-doc] summary::before {
+  content: '';
+  flex: 0 0 auto;
+  width: 0.4rem;
+  height: 0.4rem;
+  border-right: 1.5px solid rgb(var(--gb-tint-muted));
+  border-top: 1.5px solid rgb(var(--gb-tint-muted));
+  transform: rotate(45deg); /* chevron pointing right */
+  transition: transform 0.15s ease;
+}
+body[data-gb-doc] details[open] > summary::before {
+  transform: rotate(135deg); /* chevron pointing down */
+}
+body[data-gb-doc] details > :not(summary) {
+  margin-left: 1rem;
+  margin-right: 1rem;
+}
+body[data-gb-doc] details > :nth-child(2):not(summary) { margin-top: 0.25rem; }
+body[data-gb-doc] details > :last-child:not(summary) { margin-bottom: 1rem; }
