@@ -32,6 +32,11 @@ export function rebasePath(target: string, fromDir: string, toDir: string): stri
  * resolve relative to the document being previewed instead of the include
  * file's own directory. Pushed to the end of the core chain, after the
  * `inline` rule has populated token.children.
+ *
+ * Known limitations (deliberate scope decisions):
+ * - GitBook tag attributes inside includes (e.g. `{% file src="./x.pdf" %}`)
+ *   are not rebased — only markdown link hrefs and image srcs are.
+ * - Raw HTML inside includes (`<img src>`, `<a href>`) is not rebased.
  */
 export function rebasePlugin(md: MarkdownIt): void {
   md.core.ruler.push('gitbook_rebase', (state) => {
