@@ -18,6 +18,16 @@ export function activate(context: vscode.ExtensionContext): {
   registerTagCompletion(context);
   registerPathCompletion(context);
 
+  // The markdown extension only re-renders on content changes, so a scheme
+  // change would otherwise not show until the next edit.
+  context.subscriptions.push(
+    vscode.workspace.onDidChangeConfiguration((event) => {
+      if (event.affectsConfiguration('gitbookViewer.colorScheme')) {
+        void vscode.commands.executeCommand('markdown.preview.refresh');
+      }
+    }),
+  );
+
   return {
     extendMarkdownIt(md: MarkdownIt): MarkdownIt {
       const extended = gitbookPlugin(md, { readDocumentText: readOpenDocument });
@@ -33,10 +43,12 @@ export function activate(context: vscode.ExtensionContext): {
         const scheme = vscode.workspace
           .getConfiguration('gitbookViewer')
           .get<'auto' | 'light' | 'dark'>('colorScheme', 'auto');
+        // Whitelist before interpolating into HTML: settings.json can hold
+        // arbitrary strings, and anything unrecognised behaves as auto.
         const stamp =
-          scheme === 'auto'
-            ? ''
-            : `<div data-gb-scheme-marker="${scheme}" style="display:none"></div>\n`;
+          scheme === 'light' || scheme === 'dark'
+            ? `<div data-gb-scheme-marker="${scheme}" style="display:none"></div>\n`
+            : '';
         return stamp + original(tokens, options, env);
       };
 

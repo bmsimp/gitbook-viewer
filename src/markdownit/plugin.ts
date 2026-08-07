@@ -21,6 +21,11 @@ export interface PluginOptions {
 }
 
 export function gitbookPlugin(md: MarkdownIt, options: PluginOptions = {}): MarkdownIt {
+  // Idempotence: applying the plugin twice would double the block rule.
+  if (md.renderer.rules.gitbook_open) {
+    return md;
+  }
+
   const readFile = options.readFile ?? defaultFileReader;
 
   md.block.ruler.before('fence', 'gitbook_tag', createRule(readFile), {

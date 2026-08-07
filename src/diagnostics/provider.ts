@@ -16,8 +16,14 @@ export function registerDiagnostics(context: vscode.ExtensionContext): void {
 
   const timers = new Map<string, NodeJS.Timeout>();
 
+  function isCheckable(document: vscode.TextDocument): boolean {
+    return document.languageId === 'markdown' && document.uri.scheme === 'file';
+  }
+
   function refresh(document: vscode.TextDocument): void {
-    if (document.languageId !== 'markdown' || document.uri.scheme !== 'file') {
+    // isClosed guards against a debounce timer that outlived its document;
+    // reading a closed document would resurrect stale diagnostics.
+    if (!isCheckable(document) || document.isClosed) {
       return;
     }
 
@@ -45,6 +51,9 @@ export function registerDiagnostics(context: vscode.ExtensionContext): void {
   }
 
   function schedule(document: vscode.TextDocument): void {
+    if (!isCheckable(document)) {
+      return; // don't allocate throwaway timers for non-markdown edits
+    }
     const key = document.uri.toString();
     clearTimeout(timers.get(key));
     timers.set(
@@ -59,7 +68,14 @@ export function registerDiagnostics(context: vscode.ExtensionContext): void {
   context.subscriptions.push(
     vscode.workspace.onDidOpenTextDocument(refresh),
     vscode.workspace.onDidChangeTextDocument((event) => schedule(event.document)),
-    vscode.workspace.onDidCloseTextDocument((document) => collection.delete(document.uri)),
+    vscode.workspace.onDidCloseTextDocument((document) => {
+      // Cancel any in-flight debounce so it cannot fire after the close and
+      // set stale diagnostics right back.
+      const key = document.uri.toString();
+      clearTimeout(timers.get(key));
+      timers.delete(key);
+      collection.delete(document.uri);
+    }),
     vscode.workspace.onDidChangeConfiguration((event) => {
       if (event.affectsConfiguration('gitbookViewer.diagnostics.enabled')) {
         vscode.workspace.textDocuments.forEach(refresh);
