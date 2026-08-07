@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { scan, scanLine, KNOWN_TAGS } from '../../src/syntax/scanner';
+import { isIntegrationTag, scan, scanLine, KNOWN_TAGS } from '../../src/syntax/scanner';
 
 describe('scanLine', () => {
   it('returns null for ordinary text', () => {
@@ -74,8 +74,57 @@ describe('scanLine', () => {
     });
   });
 
+  it('parses an integration block with attributes as a standalone tag', () => {
+    const line =
+      '{% @storylane/embed subdomain="app" linkValue="x" url="https://app.storylane.io/share/x" %}';
+    expect(scanLine(line, 4)).toMatchObject({
+      name: '@storylane/embed',
+      kind: 'standalone',
+      named: {
+        subdomain: 'app',
+        linkValue: 'x',
+        url: 'https://app.storylane.io/share/x',
+      },
+      positional: [],
+      line: 4,
+    });
+  });
+
+  it('returns null for a bare @name without a /block segment', () => {
+    // GitBook always emits vendor/block; a lone @foo stays literal text.
+    expect(scanLine('{% @foo %}', 0)).toBeNull();
+    expect(scanLine('{% @foo url="https://x.test" %}', 0)).toBeNull();
+  });
+
+  it('pins the end@vendor/block edge case as a close tag (renderer ignores it)', () => {
+    // No corpus document writes this; the greedy `end` prefix strips first, so
+    // the natural fallout is a close tag named @storylane/embed. The block rule
+    // routes only non-close integration tags to a card, so this line renders as
+    // literal text — pinned here so a change is a conscious decision.
+    expect(scanLine('{% end@storylane/embed %}', 0)).toMatchObject({
+      name: '@storylane/embed',
+      kind: 'close',
+    });
+  });
+
+  it('classifies @vendor/block names as integration tags', () => {
+    expect(isIntegrationTag('@storylane/embed')).toBe(true);
+    expect(isIntegrationTag('@cipp-external-webpage-block/cyberdrain')).toBe(true);
+    expect(isIntegrationTag('hint')).toBe(false);
+    expect(isIntegrationTag('embed')).toBe(false);
+  });
+
   it('does not exhibit catastrophic backtracking on a near-miss line', () => {
     const line = '{% a' + ' '.repeat(50_000) + 'x';
+    const start = performance.now();
+    const result = scanLine(line, 0);
+    const elapsed = performance.now() - start;
+    expect(result).toBeNull();
+    expect(elapsed).toBeLessThan(50);
+  });
+
+  it('does not exhibit catastrophic backtracking on an @-prefixed near-miss line', () => {
+    const line = '{% @a/b' + ' '.repeat(50_000) + 'x';
     const start = performance.now();
     const result = scanLine(line, 0);
     const elapsed = performance.now() - start;

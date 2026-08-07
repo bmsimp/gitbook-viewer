@@ -33,7 +33,23 @@ export const KNOWN_TAGS: ReadonlySet<string> = new Set([
 // since the `end` prefix is stripped greedily before the name is read. No tag
 // in the known GitBook corpus begins with `end`, so this is intentionally
 // unresolved rather than special-cased.
-const TAG_HEAD = /^(end)?([A-Za-z][\w-]*)(?=\s|$)/;
+//
+// The name is either an integration block (`@vendor/block` — both segments
+// required; GitBook always emits the pair, so a bare `@foo` stays literal
+// text) or a plain tag name. The alternation cannot backtrack ambiguously:
+// both arms are anchored right after the optional prefix and are mutually
+// exclusive on their first character (`@` vs a letter), and each `[\w-]*`
+// run is bounded by the `(?=\s|$)` lookahead failing at most once.
+const TAG_HEAD = /^(end)?(@[A-Za-z][\w-]*\/[A-Za-z][\w-]*|[A-Za-z][\w-]*)(?=\s|$)/;
+
+/**
+ * Integration blocks (`{% @vendor/block ... %}`) are third-party embeds. They
+ * are always standalone and implicitly "known": diagnostics must not flag them
+ * as unknown tags nor drag them into open/close balancing.
+ */
+export function isIntegrationTag(name: string): boolean {
+  return name.startsWith('@');
+}
 
 // Line-based by design: a same-line pair like `{% hint %}{% endhint %}` parses
 // as a bare open tag, and diagnostics flag the resulting imbalance.
@@ -59,7 +75,11 @@ export function scanLine(line: string, lineNumber: number): GitBookTag | null {
 
   return {
     name,
-    kind: end ? 'close' : NEVER_CLOSE_TAGS.has(name) ? 'standalone' : 'open',
+    kind: end
+      ? 'close'
+      : NEVER_CLOSE_TAGS.has(name) || isIntegrationTag(name)
+        ? 'standalone'
+        : 'open',
     named,
     positional,
     line: lineNumber,
