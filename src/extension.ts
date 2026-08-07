@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import type MarkdownIt from 'markdown-it';
 import { gitbookPlugin } from './markdownit/plugin';
+import type { RenderEnv } from './markdownit/context';
 import { registerDiagnostics } from './diagnostics/provider';
 import { registerTagCompletion } from './completion/tagCompletion';
 import { registerPathCompletion } from './completion/pathCompletion';
@@ -40,6 +41,12 @@ export function activate(context: vscode.ExtensionContext): {
       // script, which does run) reads it and sets body[data-gb-scheme].
       const original = extended.renderer.render.bind(extended.renderer);
       extended.renderer.render = (tokens, options, env): string => {
+        // {% include %} expands by rendering the included file through this
+        // same renderer, so without this guard every include would repeat the
+        // marker inside the page body.
+        if ((env as RenderEnv | undefined)?.gbNested) {
+          return original(tokens, options, env);
+        }
         const scheme = vscode.workspace
           .getConfiguration('gitbookViewer')
           .get<'auto' | 'light' | 'dark'>('colorScheme', 'auto');

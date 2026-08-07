@@ -8,9 +8,11 @@ export const MAX_INCLUDE_DEPTH = 5;
 export const MAX_INCLUDE_TOTAL = 100;
 
 // Same normalization markdown-it's core `normalize` rule applies to the root
-// document. Included content is spliced via `md.block.parse`, which bypasses
-// core rules, so without this a CRLF include never has truly blank lines and
-// e.g. a leading <details> html_block swallows the whole file verbatim.
+// document. A CRLF include whose lines are not truly blank makes e.g. a
+// leading <details> html_block swallow the whole file verbatim, so the
+// resolver's contract is that it hands back already-normalized markdown --
+// independent of whether the caller happens to route it through a full
+// md.render (which normalizes) or a bare block parse (which does not).
 const NEWLINES_RE = /\r\n?|\u2028|\u2029/g;
 const NULL_RE = /\u0000/g;
 
@@ -49,8 +51,10 @@ export function resolveInclude(
   if (stack.length > MAX_INCLUDE_DEPTH) {
     return { ok: false, reason: `include nested deeper than ${MAX_INCLUDE_DEPTH} levels at ${target}` };
   }
-  const count = ctx.env.gbIncludeCount ?? 0;
-  if (count >= MAX_INCLUDE_TOTAL) {
+  // Shared by reference with every nested render's env, so the cap is a
+  // whole-document total rather than a per-nesting-level one.
+  const budget = ctx.env.gbBudget ?? { count: 0 };
+  if (budget.count >= MAX_INCLUDE_TOTAL) {
     return { ok: false, reason: `include budget exceeded (${MAX_INCLUDE_TOTAL} includes per document)` };
   }
 
@@ -59,7 +63,7 @@ export function resolveInclude(
     return { ok: false, reason: `include target not found: ${target}` };
   }
 
-  ctx.env.gbIncludeCount = count + 1;
+  budget.count += 1;
   const normalized = content.replace(NEWLINES_RE, '\n').replace(NULL_RE, '\uFFFD');
   return { ok: true, absolutePath, content: stripFrontMatter(normalized) };
 }
