@@ -28,17 +28,32 @@ export const KNOWN_TAGS: ReadonlySet<string> = new Set([
   ...REQUIRED_CLOSE_TAGS, ...OPTIONAL_CLOSE_TAGS, ...NEVER_CLOSE_TAGS,
 ]);
 
-const TAG_LINE = /^(\s*)\{%\s*(end)?([A-Za-z][\w-]*)\s*([\s\S]*?)\s*%\}\s*$/;
+// Matches an optional `end` prefix followed by the tag name. Ambiguity: a tag
+// literally named `endpoint` would be classified as a close tag for `point`,
+// since the `end` prefix is stripped greedily before the name is read. No tag
+// in the known GitBook corpus begins with `end`, so this is intentionally
+// unresolved rather than special-cased.
+const TAG_HEAD = /^(end)?([A-Za-z][\w-]*)(?=\s|$)/;
 
 export function scanLine(line: string, lineNumber: number): GitBookTag | null {
-  const match = TAG_LINE.exec(line);
-  if (!match) {
+  // Bail out on cheap, linear checks before doing any attribute parsing, so a
+  // near-miss line (e.g. an unterminated tag) never touches a backtracking
+  // regex over the whole line.
+  const raw = line.trim();
+  if (!raw.startsWith('{%') || !raw.endsWith('%}') || raw.length < 4) {
     return null;
   }
 
-  const [, indent = '', end, name = '', attrText = ''] = match;
+  const inner = raw.slice(2, -2).trim();
+  const head = TAG_HEAD.exec(inner);
+  if (!head) {
+    return null;
+  }
+
+  const [full, end, name = ''] = head;
+  const attrText = inner.slice(full.length);
   const { named, positional } = parseAttributes(attrText);
-  const raw = line.trim();
+  const startCol = line.length - line.trimStart().length;
 
   return {
     name,
@@ -46,8 +61,8 @@ export function scanLine(line: string, lineNumber: number): GitBookTag | null {
     named,
     positional,
     line: lineNumber,
-    startCol: indent.length,
-    endCol: indent.length + raw.length,
+    startCol,
+    endCol: startCol + raw.length,
     raw,
   };
 }

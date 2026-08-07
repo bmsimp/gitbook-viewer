@@ -52,6 +52,36 @@ describe('scanLine', () => {
     expect(scanLine('{% bogus %}', 0)).toMatchObject({ name: 'bogus', kind: 'open' });
     expect(KNOWN_TAGS.has('bogus')).toBe(false);
   });
+
+  it('returns null for a tag with no name', () => {
+    expect(scanLine('{% %}', 0)).toBeNull();
+  });
+
+  it('keeps an attribute value intact when it contains a literal %} sequence', () => {
+    expect(scanLine('{% hint title="100%} off" %}', 0)).toMatchObject({
+      name: 'hint',
+      kind: 'open',
+      named: { title: '100%} off' },
+    });
+  });
+
+  it('parses a tag with an unquoted attribute, silently dropping the malformed attribute', () => {
+    expect(scanLine('{% code overflow=wrap %}', 0)).toMatchObject({
+      name: 'code',
+      kind: 'open',
+      named: {},
+      positional: [],
+    });
+  });
+
+  it('does not exhibit catastrophic backtracking on a near-miss line', () => {
+    const line = '{% a' + ' '.repeat(50_000) + 'x';
+    const start = performance.now();
+    const result = scanLine(line, 0);
+    const elapsed = performance.now() - start;
+    expect(result).toBeNull();
+    expect(elapsed).toBeLessThan(50);
+  });
 });
 
 describe('scan', () => {
