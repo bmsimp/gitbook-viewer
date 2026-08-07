@@ -5,29 +5,53 @@
   "version": "0.1.0",
   "publisher": "bmsimp",
   "license": "MIT",
-  "repository": { "type": "git", "url": "https://github.com/bmsimp/gitbook-viewer.git" },
-  "engines": { "vscode": "^1.90.0" },
-  "categories": ["Programming Languages", "Visualization"],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/bmsimp/gitbook-viewer.git"
+  },
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Visualization"
+  ],
   "main": "./dist/extension.js",
-  "activationEvents": ["onLanguage:markdown"],
+  "activationEvents": [
+    "onLanguage:markdown"
+  ],
   "contributes": {
     "markdown.markdownItPlugins": true,
-    "markdown.previewStyles": ["./media/fonts.css", "./media/gitbook.css"],
-    "markdown.previewScripts": ["./media/preview.js"],
-    "snippets": [{ "language": "markdown", "path": "./snippets/gitbook.json" }],
+    "markdown.previewStyles": [
+      "./media/fonts.css",
+      "./media/gitbook.css"
+    ],
+    "markdown.previewScripts": [
+      "./media/preview.js"
+    ],
+    "snippets": [
+      {
+        "language": "markdown",
+        "path": "./snippets/gitbook.json"
+      }
+    ],
     "configuration": {
       "title": "GitBook Viewer",
       "properties": {
         "gitbookViewer.colorScheme": {
           "type": "string",
-          "enum": ["auto", "light", "dark"],
+          "enum": [
+            "auto",
+            "light",
+            "dark"
+          ],
           "default": "auto",
           "description": "Which GitBook palette the preview uses. 'auto' follows the editor theme."
         },
         "gitbookViewer.diagnostics.enabled": {
           "type": "boolean",
           "default": true,
-          "description": "Report broken {% include %}, {% content-ref %}, and {% file %} targets."
+          "description": "Report broken {% include %}, {% content-ref %}, {% file %}, and relative {% embed %} targets."
         }
       }
     }
@@ -39,7 +63,6 @@
     "compile": "npm run fonts && npm run build",
     "test": "vitest run",
     "corpus": "node scripts/corpus-check.mjs",
-    "test:integration": "vscode-test",
     "typecheck": "tsc --noEmit",
     "package": "npm run compile && vsce package",
     "vscode:prepublish": "npm run compile"
@@ -50,8 +73,6 @@
     "@types/markdown-it": "^14.1.2",
     "@types/node": "^22.20.1",
     "@types/vscode": "~1.90.0",
-    "@vscode/test-cli": "^0.0.10",
-    "@vscode/test-electron": "^2.5.2",
     "@vscode/vsce": "^3.9.2",
     "esbuild": "^0.24.2",
     "jsdom": "^25.0.1",

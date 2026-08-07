@@ -35,6 +35,8 @@ export const KNOWN_TAGS: ReadonlySet<string> = new Set([
 // unresolved rather than special-cased.
 const TAG_HEAD = /^(end)?([A-Za-z][\w-]*)(?=\s|$)/;
 
+// Line-based by design: a same-line pair like `{% hint %}{% endhint %}` parses
+// as a bare open tag, and diagnostics flag the resulting imbalance.
 export function scanLine(line: string, lineNumber: number): GitBookTag | null {
   // Bail out on cheap, linear checks before doing any attribute parsing, so a
   // near-miss line (e.g. an unterminated tag) never touches a backtracking

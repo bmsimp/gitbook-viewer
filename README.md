@@ -2,7 +2,7 @@
 
 Renders GitBook block syntax in VS Code's **native** Markdown preview. Open any page from a GitBook-synced repo and press `Ctrl+Shift+V` (or `Ctrl+K V` for side-by-side) — it just works, no custom webview, no separate command.
 
-Without this extension, a GitBook page in the preview is a wall of raw `{% hint %}` / `{% tabs %}` / `{% include %}` markers with the actual content squashed between them, includes missing entirely, and front matter rendered as a stray table. With it, hints become styled callouts, steppers and tabs get real structure, includes are spliced in place, content-refs and files render as cards, and the page header (title, icon, description) is drawn from front matter — pixel-matched to GitBook's own light and dark palettes, with the Inter font bundled.
+Without this extension, a GitBook page in the preview is a wall of raw `{% hint %}` / `{% tabs %}` / `{% include %}` markers with the actual content squashed between them, includes missing entirely, and front matter rendered as a stray table. With it, hints become styled callouts, steppers and tabs get real structure, includes are spliced in place, content-refs and files render as cards, and the page description from front matter becomes a subtitle header — pixel-matched to GitBook's own light and dark palettes, with the Inter font bundled.
 
 ## Supported syntax
 
@@ -15,14 +15,14 @@ Without this extension, a GitBook page in the preview is a wall of raw `{% hint 
 | `{% include "…" %}` | Target markdown spliced inline — nested includes, relative-path resolution from the including file, link/image path rebasing, plus cycle detection, a 5-level depth cap, and a per-document expansion budget |
 | `{% embed url="…" %}` | Link card (the preview's CSP forbids iframes, so embeds don't play inline) |
 | `{% file src="…" %}` | Download-style file card |
-| `{% code overflow="wrap" … %}` | Fenced code with GitBook's wrap/title/line-number options |
-| Front matter `title` / `icon` / `description` | GitBook-style page header |
+| `{% code overflow="wrap" %}` | Fenced code with GitBook's soft-wrap option |
+| Front matter `description` | GitBook-style page header (the description as a subtitle; `title` is deliberately not rendered and `icon` is reserved) |
 
 Unsupported tags (e.g. `columns`, `expand`) are left as-is rather than mangled.
 
 ## Editor features
 
-- **Diagnostics** — squiggles for missing `{% include %}` / `{% content-ref %}` / `{% file %}` targets, unbalanced open/close tags, unknown tag names, and includes that escape the workspace.
+- **Diagnostics** — squiggles for missing `{% include %}` / `{% content-ref %}` / `{% file %}` / relative `{% embed %}` targets, unbalanced open/close tags, unknown tag names, and includes that escape the workspace.
 - **Completion** — tag completion when you type `{%`, and file-path completion inside quoted attributes (`src=`, `url=`, include targets).
 - **Snippets** — 11 `gb-` snippets covering every supported block (all four hint styles, stepper, tabs, content-ref, code, include, embed, file).
 
@@ -31,7 +31,7 @@ Unsupported tags (e.g. `columns`, `expand`) are left as-is rather than mangled.
 | Setting | Default | Description |
 | --- | --- | --- |
 | `gitbookViewer.colorScheme` | `auto` | Which GitBook palette the preview uses: `auto` follows the editor theme, or force `light` / `dark`. Both palettes are pixel-matched to GitBook's. |
-| `gitbookViewer.diagnostics.enabled` | `true` | Report broken `{% include %}`, `{% content-ref %}`, and `{% file %}` targets. |
+| `gitbookViewer.diagnostics.enabled` | `true` | Report broken `{% include %}`, `{% content-ref %}`, `{% file %}`, and relative `{% embed %}` targets. |
 
 ## Install
 
