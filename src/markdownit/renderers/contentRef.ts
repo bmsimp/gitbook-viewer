@@ -1,22 +1,11 @@
-import * as path from 'node:path';
 import type { GitBookTag } from '../../syntax/scanner';
 import type { RenderContext, TagRenderer } from '../context';
 import { escapeHtml } from '../context';
 import { extractPageMeta } from '../pageMeta';
+import { pathModuleFor } from '../paths';
 
 const ARROW =
   '<svg class="gb-content-ref__arrow" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M6 3.5 10.5 8 6 12.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-
-/**
- * On Windows, `path.resolve('/docs', 'x.md')` prepends the current drive
- * letter (`G:\docs\x.md`), which breaks lookups against POSIX-style paths
- * such as those used by in-memory test file maps. When the document path is
- * POSIX-style (no backslash, no drive letter), resolve with path.posix so the
- * result stays driveless; real Windows fsPaths keep platform behavior.
- */
-function pathModuleFor(docPath: string): path.PlatformPath {
-  return !docPath.includes('\\') && !/^[A-Za-z]:/.test(docPath) ? path.posix : path;
-}
 
 function resolveTarget(url: string, ctx: RenderContext): string | null {
   const docPath = ctx.env.currentDocument?.fsPath;

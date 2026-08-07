@@ -1,7 +1,10 @@
 import type MarkdownIt from 'markdown-it';
+import type { GitBookTag } from '../syntax/scanner';
 import { OPTIONAL_CLOSE_TAGS, scanLine } from '../syntax/scanner';
 import { renderers } from './renderers';
 import { defaultFileReader } from './fileReader';
+import { resolveInclude } from './includeResolver';
+import { renderIncludeError } from './renderers/include';
 import type { FileReader, GitBookToken, RenderContext, RenderEnv } from './context';
 
 // See the note in context.ts: the CJS build must use the namespace types from
@@ -17,7 +20,7 @@ export interface PluginOptions {
 export function gitbookPlugin(md: MarkdownIt, options: PluginOptions = {}): MarkdownIt {
   const readFile = options.readFile ?? defaultFileReader;
 
-  md.block.ruler.before('fence', 'gitbook_tag', createRule(), {
+  md.block.ruler.before('fence', 'gitbook_tag', createRule(readFile), {
     alt: ['paragraph', 'reference', 'blockquote', 'list'],
   });
 
@@ -42,7 +45,7 @@ export function gitbookPlugin(md: MarkdownIt, options: PluginOptions = {}): Mark
   return md;
 }
 
-function createRule() {
+function createRule(readFile: FileReader) {
   return function gitbookTagRule(
     state: StateBlock,
     startLine: number,
@@ -58,7 +61,22 @@ function createRule() {
     const max = state.eMarks[startLine]!;
     const tag = scanLine(state.src.slice(start, max), startLine);
 
-    if (!tag || !renderers[tag.name]) {
+    if (!tag) {
+      return false;
+    }
+
+    // Includes have no renderer entry: on success they leave no tokens of
+    // their own, just the included file's markdown spliced in place.
+    if (tag.name === 'include') {
+      if (silent) {
+        return true;
+      }
+      expandInclude(state, startLine, tag, readFile);
+      state.line = startLine + 1;
+      return true;
+    }
+
+    if (!renderers[tag.name]) {
       return false;
     }
 
@@ -80,4 +98,48 @@ function createRule() {
     state.line = startLine + 1;
     return true;
   };
+}
+
+function expandInclude(
+  state: StateBlock,
+  startLine: number,
+  tag: GitBookTag,
+  readFile: FileReader,
+): void {
+  const env = (state.env ?? {}) as RenderEnv;
+  const ctx: RenderContext = { md: state.md, env, readFile };
+  const target = tag.positional[0] ?? '';
+  const stack = env.gbIncludeStack ?? [];
+  // Nested includes resolve relative to the file that contains them.
+  const fromFile = stack[stack.length - 1] ?? env.currentDocument?.fsPath;
+  const result = resolveInclude(target, fromFile, ctx);
+
+  if (!result.ok) {
+    const token = state.push('html_block', '', 0);
+    token.content = `${renderIncludeError(result.reason)}\n`;
+    token.map = [startLine, startLine + 1];
+    return;
+  }
+
+  env.gbIncludeStack = [...stack, result.absolutePath];
+
+  const included: Token[] = [];
+  state.md.block.parse(result.content, state.md, env, included);
+
+  for (const token of included) {
+    // Included tokens map to lines in another file; drop the mapping so the
+    // preview's scroll sync does not jump to unrelated lines in this document.
+    token.map = null;
+    markForRebase(token, result.absolutePath);
+    state.tokens.push(token);
+  }
+
+  env.gbIncludeStack = stack;
+}
+
+function markForRebase(token: Token, includeAbsPath: string): void {
+  // Inline tokens carry links/images whose relative paths need rebasing (Task 8).
+  if (token.type === 'inline') {
+    (token as Token & { gbRebaseFrom?: string }).gbRebaseFrom = includeAbsPath;
+  }
 }
