@@ -6,6 +6,7 @@ import { defaultFileReader } from './fileReader';
 import { resolveInclude } from './includeResolver';
 import { renderIncludeError } from './renderers/include';
 import { rebasePlugin } from './rebase';
+import { pageHeaderPlugin, type DocumentTextReader } from './pageHeader';
 import type { FileReader, GitBookToken, RenderContext, RenderEnv } from './context';
 
 // See the note in context.ts: the CJS build must use the namespace types from
@@ -16,6 +17,7 @@ type RenderRule = MarkdownIt.Renderer.RenderRule;
 
 export interface PluginOptions {
   readFile?: FileReader;
+  readDocumentText?: DocumentTextReader;
 }
 
 export function gitbookPlugin(md: MarkdownIt, options: PluginOptions = {}): MarkdownIt {
@@ -43,6 +45,7 @@ export function gitbookPlugin(md: MarkdownIt, options: PluginOptions = {}): Mark
   md.renderer.rules.gitbook_open = render('open');
   md.renderer.rules.gitbook_close = render('close');
 
+  pageHeaderPlugin(md, readFile, options.readDocumentText);
   rebasePlugin(md);
 
   return md;
