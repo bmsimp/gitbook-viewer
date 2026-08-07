@@ -140,6 +140,9 @@ function renderInclude(md: MarkdownIt, readFile: FileReader): RenderRule {
 
     // Created on the root env so that sibling includes at the same level share
     // it too; nested envs inherit the same object through the spread below.
+    // Caveat: the counter persists on the caller's env object. VS Code builds
+    // a fresh env per render so this is per-render in practice; a host that
+    // reused one env across renders would accumulate toward the cap.
     const budget = (renderEnv.gbBudget ??= { count: 0 });
     const ctx: RenderContext = {
       md,

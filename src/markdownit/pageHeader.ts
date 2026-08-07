@@ -26,6 +26,12 @@ export function pageHeaderPlugin(
   readDocumentText?: DocumentTextReader,
 ): void {
   md.core.ruler.push('gitbook_page_header', (state) => {
+    // Custom core rules also run for parseInline/renderInline; a header marker
+    // prepended to inline fragments would leak the header into other callers
+    // sharing this markdown-it instance.
+    if (state.inlineMode) {
+      return;
+    }
     // No token.map on purpose: the header corresponds to no source line, and
     // VS Code's preview scroll sync skips tokens without maps, so unshifting
     // it cannot desync the rest of the document.

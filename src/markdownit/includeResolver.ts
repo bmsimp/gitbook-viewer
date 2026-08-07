@@ -52,8 +52,9 @@ export function resolveInclude(
     return { ok: false, reason: `include nested deeper than ${MAX_INCLUDE_DEPTH} levels at ${target}` };
   }
   // Shared by reference with every nested render's env, so the cap is a
-  // whole-document total rather than a per-nesting-level one.
-  const budget = ctx.env.gbBudget ?? { count: 0 };
+  // whole-document total rather than a per-nesting-level one. Written back so
+  // a caller that forgot to seed gbBudget still gets an enforced cap.
+  const budget = (ctx.env.gbBudget ??= { count: 0 });
   if (budget.count >= MAX_INCLUDE_TOTAL) {
     return { ok: false, reason: `include budget exceeded (${MAX_INCLUDE_TOTAL} includes per document)` };
   }
