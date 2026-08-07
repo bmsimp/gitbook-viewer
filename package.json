@@ -2,7 +2,7 @@
   "name": "gitbook-viewer",
   "displayName": "GitBook Viewer",
   "description": "Renders GitBook block syntax in the native VS Code Markdown preview",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "publisher": "bmsimp",
   "license": "MIT",
   "repository": {
