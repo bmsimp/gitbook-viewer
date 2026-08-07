@@ -168,13 +168,20 @@
     });
   }
 
-  // Register the listener only while the document is still parsing. This
-  // script is re-injected on every preview update, and DOMContentLoaded fires
-  // once per document: an unconditional addEventListener would leave each
-  // injection's dead listener (and its whole closure) attached forever.
+  // Register the listener only while the document is still parsing.
+  // DOMContentLoaded fires once per document; an unconditional
+  // addEventListener would leave a dead listener attached.
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', build);
   } else {
     build();
   }
+
+  // VS Code's markdown preview does NOT re-run contributed scripts on
+  // content changes. It patches the DOM in place and dispatches this custom
+  // event afterwards; without it we would only ever see the initial (often
+  // still empty) document shell. build() is idempotent, so re-running it on
+  // every update is safe, and the strip/panel count guard rebuilds tab strips
+  // the patcher wiped. Scripts load once per webview, so this registers once.
+  window.addEventListener('vscode.markdown.updateContent', build);
 })();

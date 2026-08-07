@@ -289,3 +289,50 @@ describe('gitbook document detection', () => {
     expect(dom.window.document.body.hasAttribute('data-gb-doc')).toBe(false);
   });
 });
+
+describe('vscode preview lifecycle', () => {
+  // VS Code loads contributed scripts once against a shell that may not yet
+  // contain the rendered markdown, then patches content into the DOM and fires
+  // window 'vscode.markdown.updateContent' after every patch. These tests
+  // replay that exact sequence.
+  it('processes content that arrives after the script has loaded', async () => {
+    const dom = new JSDOM('<body></body>', { runScripts: 'outside-only' });
+    await new Promise<void>((resolve) => {
+      dom.window.addEventListener('load', () => resolve());
+    });
+    dom.window.eval(SCRIPT);
+    expect(dom.window.document.body.hasAttribute('data-gb-doc')).toBe(false);
+
+    dom.window.document.body.innerHTML =
+      '<div class="gb-hint"></div>' +
+      '<div class="gb-tabs" data-gb-tabs>' +
+      '<div class="gb-tabs__strip" role="tablist"></div>' +
+      '<div class="gb-tabs__tab" data-gb-tab-index="0" data-gb-active="true" data-gb-tab-title="One"></div>' +
+      '<div class="gb-tabs__tab" data-gb-tab-index="1" data-gb-active="false" data-gb-tab-title="Two" hidden></div>' +
+      '</div>';
+    dom.window.dispatchEvent(new dom.window.Event('vscode.markdown.updateContent'));
+
+    expect(dom.window.document.body.hasAttribute('data-gb-doc')).toBe(true);
+    expect(dom.window.document.querySelectorAll('.gb-tabs__button')).toHaveLength(2);
+  });
+
+  it('rebuilds the tab strip after the patcher wipes it', async () => {
+    const dom = new JSDOM(
+      '<body><div class="gb-tabs" data-gb-tabs>' +
+        '<div class="gb-tabs__strip" role="tablist"></div>' +
+        '<div class="gb-tabs__tab" data-gb-tab-index="0" data-gb-active="true" data-gb-tab-title="One"></div>' +
+        '</div></body>',
+      { runScripts: 'outside-only' },
+    );
+    await new Promise<void>((resolve) => {
+      dom.window.addEventListener('load', () => resolve());
+    });
+    dom.window.eval(SCRIPT);
+    expect(dom.window.document.querySelectorAll('.gb-tabs__button')).toHaveLength(1);
+
+    const strip = dom.window.document.querySelector('.gb-tabs__strip')!;
+    strip.innerHTML = '';
+    dom.window.dispatchEvent(new dom.window.Event('vscode.markdown.updateContent'));
+    expect(dom.window.document.querySelectorAll('.gb-tabs__button')).toHaveLength(1);
+  });
+});
