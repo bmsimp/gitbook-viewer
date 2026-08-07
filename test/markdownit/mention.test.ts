@@ -129,6 +129,31 @@ describe('mention links', () => {
     expect(html).toContain('<span class="gb-mention">Scheduled Task Details</span>');
   });
 
+  it('renders an image-bodied mention as-authored without duplicating the image', () => {
+    const html = renderLikeVsCode(md, '[![alt](img.png)](task.md "mention")', env());
+    expect(html.match(/<img/g)).toHaveLength(1);
+    expect(html).not.toContain('gb-mention');
+  });
+
+  it('renders a code-bodied mention as-authored without duplicating the code', () => {
+    const html = renderLikeVsCode(md, '[`task.md`](task.md "mention")', env());
+    expect(html.match(/<code>task\.md<\/code>/g)).toHaveLength(1);
+    expect(html).not.toContain('gb-mention');
+  });
+
+  it('renders an emphasis-bodied mention as-authored without empty strong shells', () => {
+    const html = renderLikeVsCode(md, '[**bold** rest](task.md "mention")', env());
+    expect(html).toContain('<strong>bold</strong> rest</a>');
+    expect(html).not.toContain('<strong></strong>');
+    expect(html).not.toContain('gb-mention');
+  });
+
+  it('renders a multi-line mention body as-authored rather than leaking a softbreak', () => {
+    const html = renderLikeVsCode(md, '[line one\nline two](task.md "mention")', env());
+    expect(html).toContain('line one\nline two</a>');
+    expect(html).not.toContain('gb-mention');
+  });
+
   it('does not eat the document on a link_open with no matching link_close', () => {
     // Hand-degrade a real token stream: drop the mention's link_close so the
     // renderer sees a malformed inline. Without the close-ahead guard the

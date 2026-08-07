@@ -113,21 +113,22 @@ function mentionText(url: string, docPath: string | undefined, readFile: FileRea
 }
 
 /**
- * Suppression must only ever start on a link that provably closes: a
- * link_open with no link_close before end-of-stream (malformed input) would
- * otherwise swallow every text token in the rest of the inline.
+ * Suppression must only ever start on a link that provably closes AND whose
+ * body is plain text. A link_open with no link_close before end-of-stream
+ * (malformed input) would swallow every text token in the rest of the
+ * inline; a body holding non-text tokens (image, code_inline, emphasis
+ * shells, softbreaks) would leak them next to the injected title because
+ * suppression only silences `text` tokens. GitBook itself only emits
+ * plain-text mentions, so anything else renders entirely as-authored.
  */
-function hasMatchingClose(tokens: Token[], openIdx: number): boolean {
-  let depth = 0;
+function isReplaceablePlainTextLink(tokens: Token[], openIdx: number): boolean {
   for (let i = openIdx + 1; i < tokens.length; i++) {
     const type = tokens[i]!.type;
-    if (type === 'link_open') {
-      depth += 1;
-    } else if (type === 'link_close') {
-      if (depth === 0) {
-        return true;
-      }
-      depth -= 1;
+    if (type === 'link_close') {
+      return true;
+    }
+    if (type !== 'text' && type !== 'text_special') {
+      return false;
     }
   }
   return false;
@@ -175,7 +176,7 @@ export function mentionPlugin(md: MarkdownIt, readFile: FileReader): void {
       renderEnv.currentDocument?.fsPath,
       readFile,
     );
-    if (replacement === null || !hasMatchingClose(tokens, idx)) {
+    if (replacement === null || !isReplaceablePlainTextLink(tokens, idx)) {
       return opened;
     }
 
