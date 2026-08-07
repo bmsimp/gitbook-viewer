@@ -109,9 +109,15 @@ function expandInclude(
   const env = (state.env ?? {}) as RenderEnv;
   const ctx: RenderContext = { md: state.md, env, readFile };
   const target = tag.positional[0] ?? '';
-  const stack = env.gbIncludeStack ?? [];
-  // Nested includes resolve relative to the file that contains them.
-  const fromFile = stack[stack.length - 1] ?? env.currentDocument?.fsPath;
+  // Seed the stack with the root document itself so an include chain leading
+  // back to the document being rendered errors immediately as a cycle instead
+  // of splicing the root's own body into itself.
+  const stack =
+    env.gbIncludeStack ?? (env.currentDocument ? [env.currentDocument.fsPath] : []);
+  env.gbIncludeStack = stack;
+  // Nested includes resolve relative to the file that contains them; at the
+  // top level the stack holds only the root document.
+  const fromFile = stack[stack.length - 1];
   const result = resolveInclude(target, fromFile, ctx);
 
   if (!result.ok) {
@@ -122,24 +128,29 @@ function expandInclude(
   }
 
   env.gbIncludeStack = [...stack, result.absolutePath];
+  try {
+    const included: Token[] = [];
+    state.md.block.parse(result.content, state.md, env, included);
 
-  const included: Token[] = [];
-  state.md.block.parse(result.content, state.md, env, included);
-
-  for (const token of included) {
-    // Included tokens map to lines in another file; drop the mapping so the
-    // preview's scroll sync does not jump to unrelated lines in this document.
-    token.map = null;
-    markForRebase(token, result.absolutePath);
-    state.tokens.push(token);
+    for (const token of included) {
+      // Included tokens map to lines in another file; drop the mapping so the
+      // preview's scroll sync does not jump to unrelated lines in this document.
+      token.map = null;
+      markForRebase(token, result.absolutePath);
+      state.tokens.push(token);
+    }
+  } finally {
+    // Restore even if the reader throws, so a failure mid-splice cannot leave
+    // ancestor frames on the stack for sibling includes.
+    env.gbIncludeStack = stack;
   }
-
-  env.gbIncludeStack = stack;
 }
 
 function markForRebase(token: Token, includeAbsPath: string): void {
-  // Inline tokens carry links/images whose relative paths need rebasing (Task 8).
-  if (token.type === 'inline') {
+  // Inline tokens carry links/images whose relative paths need rebasing
+  // (Task 8). Ancestor splice loops re-visit tokens already stamped by nested
+  // expansions, so the first (deepest, correct) stamp must win.
+  if (token.type === 'inline' && !('gbRebaseFrom' in token)) {
     (token as Token & { gbRebaseFrom?: string }).gbRebaseFrom = includeAbsPath;
   }
 }

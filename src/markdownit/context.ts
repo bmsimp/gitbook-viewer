@@ -9,8 +9,14 @@ type Token = MarkdownIt.Token;
 /** Mirrors the subset of VS Code's markdown RenderEnv that we rely on. */
 export interface RenderEnv {
   currentDocument?: { fsPath: string };
-  /** Absolute paths currently being included, used to break cycles. */
+  /**
+   * Absolute paths currently being included, used to break cycles. Seeded
+   * with the root document's path at the first expansion so chains that lead
+   * back to the document itself are caught.
+   */
   gbIncludeStack?: string[];
+  /** Total successful expansions this render, bounded by MAX_INCLUDE_TOTAL. */
+  gbIncludeCount?: number;
 }
 
 export type FileReader = (absolutePath: string) => string | null;

@@ -4,6 +4,9 @@ import { pathModuleFor } from './paths';
 
 export const MAX_INCLUDE_DEPTH = 5;
 
+/** Total expansions allowed per render, bounding diamond-shaped graphs. */
+export const MAX_INCLUDE_TOTAL = 100;
+
 export type IncludeResult =
   | { ok: true; absolutePath: string; content: string }
   | { ok: false; reason: string };
@@ -24,6 +27,9 @@ export function resolveInclude(
     return { ok: false, reason: 'cannot resolve include: the document has no file path' };
   }
 
+  // Path confinement is intentionally not enforced here: the extension reads
+  // with the user's own privileges, and flagging workspace-escaping targets
+  // belongs to diagnostics, not rendering.
   const path = pathModuleFor(fromFile);
   const absolutePath = path.resolve(path.dirname(fromFile), target);
   const stack = ctx.env.gbIncludeStack ?? [];
@@ -31,8 +37,14 @@ export function resolveInclude(
   if (stack.includes(absolutePath)) {
     return { ok: false, reason: `include cycle detected at ${target}` };
   }
-  if (stack.length >= MAX_INCLUDE_DEPTH) {
+  // The stack is seeded with the root document, so at the Nth include level
+  // its length is N; `>` therefore allows exactly MAX_INCLUDE_DEPTH levels.
+  if (stack.length > MAX_INCLUDE_DEPTH) {
     return { ok: false, reason: `include nested deeper than ${MAX_INCLUDE_DEPTH} levels at ${target}` };
+  }
+  const count = ctx.env.gbIncludeCount ?? 0;
+  if (count >= MAX_INCLUDE_TOTAL) {
+    return { ok: false, reason: `include budget exceeded (${MAX_INCLUDE_TOTAL} includes per document)` };
   }
 
   const content = ctx.readFile(absolutePath);
@@ -40,5 +52,6 @@ export function resolveInclude(
     return { ok: false, reason: `include target not found: ${target}` };
   }
 
+  ctx.env.gbIncludeCount = count + 1;
   return { ok: true, absolutePath, content: stripFrontMatter(content) };
 }
