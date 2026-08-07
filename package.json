@@ -38,6 +38,7 @@
     "fonts": "node scripts/build-font-css.mjs",
     "compile": "npm run fonts && npm run build",
     "test": "vitest run",
+    "corpus": "node scripts/corpus-check.mjs",
     "test:integration": "vscode-test",
     "typecheck": "tsc --noEmit",
     "package": "npm run compile && vsce package",
