@@ -168,6 +168,67 @@ describe('preview tab script', () => {
     expect(buttons[1]!.getAttribute('tabindex')).toBe('0');
   });
 
+  it('rebuilds the strip when a panel is added under a preserved subtree', () => {
+    // VS Code's preview updater diffs the DOM, so the built strip can survive
+    // a content change that adds a panel next to it.
+    const buttons = doc.querySelectorAll<HTMLButtonElement>('.gb-tabs__button');
+    buttons[1]!.click();
+
+    const group = doc.querySelector('[data-gb-tabs]')!;
+    const extra = doc.createElement('div');
+    extra.className = 'gb-tabs__tab';
+    extra.setAttribute('data-gb-tab-index', '2');
+    extra.setAttribute('data-gb-tab-title', 'Three');
+    extra.setAttribute('hidden', '');
+    group.appendChild(extra);
+
+    doc.dispatchEvent(new (doc.defaultView as Window & typeof globalThis).Event('DOMContentLoaded'));
+
+    const rebuilt = doc.querySelectorAll<HTMLButtonElement>('.gb-tabs__button');
+    expect(rebuilt).toHaveLength(3);
+    expect(rebuilt[2]!.textContent).toBe('Three');
+    // The in-bounds remembered selection survives the rebuild.
+    expect(rebuilt[1]!.getAttribute('aria-selected')).toBe('true');
+    expect(doc.querySelectorAll<HTMLElement>('.gb-tabs__tab')[1]!.hasAttribute('hidden')).toBe(
+      false,
+    );
+    // And the new tab is fully wired.
+    rebuilt[2]!.click();
+    expect(doc.querySelectorAll<HTMLElement>('.gb-tabs__tab')[2]!.hasAttribute('hidden')).toBe(
+      false,
+    );
+  });
+
+  it('falls back to the first tab when the remembered index is out of bounds', () => {
+    doc.querySelectorAll<HTMLButtonElement>('.gb-tabs__button')[1]!.click(); // remember index 1
+
+    doc.body.innerHTML = `
+<div class="gb-tabs" data-gb-tabs>
+  <div class="gb-tabs__strip" role="tablist"></div>
+  <div class="gb-tabs__tab" data-gb-tab-index="0" data-gb-tab-title="Only" data-gb-active="true"></div>
+</div>`;
+    doc.dispatchEvent(new (doc.defaultView as Window & typeof globalThis).Event('DOMContentLoaded'));
+
+    const buttons = doc.querySelectorAll<HTMLButtonElement>('.gb-tabs__button');
+    expect(buttons).toHaveLength(1);
+    expect(buttons[0]!.getAttribute('aria-selected')).toBe('true');
+    expect(buttons[0]!.getAttribute('tabindex')).toBe('0');
+    expect(doc.querySelector<HTMLElement>('.gb-tabs__tab')!.hasAttribute('hidden')).toBe(false);
+  });
+
+  it('ignores keys it does not handle and leaves their default alone', () => {
+    const buttons = doc.querySelectorAll<HTMLButtonElement>('.gb-tabs__button');
+    const win = doc.defaultView as Window & typeof globalThis;
+
+    for (const key of ['ArrowDown', 'Tab']) {
+      const event = new win.KeyboardEvent('keydown', { key, bubbles: true, cancelable: true });
+      buttons[0]!.dispatchEvent(event);
+      expect(event.defaultPrevented).toBe(false);
+    }
+    expect(buttons[0]!.getAttribute('aria-selected')).toBe('true');
+    expect(buttons[1]!.getAttribute('aria-selected')).toBe('false');
+  });
+
   it('does nothing when there are no tab groups', () => {
     const dom = new JSDOM('<body><p>plain</p></body>', { runScripts: 'outside-only' });
     expect(() => {

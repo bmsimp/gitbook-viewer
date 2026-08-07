@@ -18,6 +18,8 @@
   }
   var activeByGroup = window[STATE_KEY];
 
+  // Ids are scoped to this preview's document (each preview is its own
+  // webview), so the same ids in another open preview cannot collide.
   function buttonId(groupIndex, index) {
     return 'gb-tab-btn-' + groupIndex + '-' + index;
   }
@@ -91,16 +93,29 @@
     }
   }
 
+  // Nested tab groups are unsupported: groups are matched by a flat
+  // querySelectorAll, inheriting the renderer's flat-groups assumption.
   function build() {
     markDocument();
     document.querySelectorAll('[data-gb-tabs]').forEach(function (group, groupIndex) {
       var strip = group.querySelector('.gb-tabs__strip');
-      if (!strip || strip.childElementCount > 0) {
-        return; // no strip to fill, or already built for this render
+      if (!strip) {
+        return; // no strip to fill
+      }
+
+      var panels = group.querySelectorAll('.gb-tabs__tab');
+      // In sync when every panel has its button. VS Code's preview updater
+      // diffs the DOM and can preserve subtrees, so a built strip may survive
+      // while panels are added or removed; rebuilding from scratch on any
+      // mismatch keeps buttons and panels paired by ordinal.
+      if (strip.childElementCount === panels.length) {
+        return; // already built for this markup
+      }
+      while (strip.firstChild) {
+        strip.removeChild(strip.firstChild);
       }
       strip.setAttribute('role', 'tablist');
 
-      var panels = group.querySelectorAll('.gb-tabs__tab');
       panels.forEach(function (panel, index) {
         // Ids are derived from position so they stay stable across re-renders.
         var ownButtonId = buttonId(groupIndex, index);
@@ -143,8 +158,13 @@
     });
   }
 
-  document.addEventListener('DOMContentLoaded', build);
-  if (document.readyState !== 'loading') {
+  // Register the listener only while the document is still parsing. This
+  // script is re-injected on every preview update, and DOMContentLoaded fires
+  // once per document: an unconditional addEventListener would leave each
+  // injection's dead listener (and its whole closure) attached forever.
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', build);
+  } else {
     build();
   }
 })();
