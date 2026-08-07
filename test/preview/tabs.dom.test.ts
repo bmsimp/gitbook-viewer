@@ -251,6 +251,15 @@ describe('gitbook document detection', () => {
     expect(doc.body.hasAttribute('data-gb-doc')).toBe(true);
   });
 
+  it('marks the body when the only gitbook feature is an html mention anchor', () => {
+    // An unresolvable mention renders with no gb-mention span, so the raw
+    // anchor itself has to be enough to gate the styling.
+    const doc = bootWith(
+      '<table><tbody><tr><td><a data-mention href="task.md">task.md</a></td></tr></tbody></table>',
+    );
+    expect(doc.body.hasAttribute('data-gb-doc')).toBe(true);
+  });
+
   it('marks the body when the only gitbook feature is a successful include', () => {
     const doc = bootWith('<span class="gb-include-marker" hidden aria-hidden="true"></span><p>Included body.</p>');
     expect(doc.body.hasAttribute('data-gb-doc')).toBe(true);

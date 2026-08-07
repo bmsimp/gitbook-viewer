@@ -135,9 +135,74 @@ function isReplaceablePlainTextLink(tokens: Token[], openIdx: number): boolean {
 }
 
 /**
+ * GitBook's second mention syntax: a raw HTML anchor, emitted inside HTML
+ * tables and paragraphs. GitBook writes exactly this attribute order
+ * (`data-mention` first, double-quoted href), so the pattern is intentionally
+ * narrow rather than a general HTML parser; the `[^<]*` inner-text group also
+ * skips any anchor with nested markup. Non-matching anchors pass through
+ * byte-identically.
+ */
+const HTML_MENTION = /<a data-mention href="([^"]*)"([^>]*)>([^<]*)<\/a>/g;
+
+/**
+ * Matches a lone opening tag of the same shape. Inline HTML is tokenized one
+ * tag per `html_inline` token (open tag / text / close tag), so the paragraph
+ * case is recognized from the open tag plus a token lookahead rather than the
+ * whole-anchor regex above.
+ */
+const HTML_MENTION_OPEN = /^<a data-mention href="([^"]*)"([^>]*)>$/;
+
+const ENTITIES: Record<string, string> = {
+  '&amp;': '&',
+  '&lt;': '<',
+  '&gt;': '>',
+  '&quot;': '"',
+};
+
+/**
+ * Defensive entity decoding for hrefs before filesystem resolution. The
+ * corpus only ever emits plain relative paths (no entities observed), but an
+ * `&amp;` in a filename would be serialized escaped, so undo the four
+ * escapeHtml entities and nothing more.
+ */
+function unescapeEntities(value: string): string {
+  return value.replace(/&(?:amp|lt|gt|quot);/g, (entity) => ENTITIES[entity]!);
+}
+
+/**
+ * Replaces the inner text of every resolvable `data-mention` anchor in a raw
+ * HTML string with the target's title. Anchors whose target cannot be
+ * resolved (missing file, external scheme, no currentDocument) are left
+ * completely untouched, as is every other byte of the input.
+ */
+function replaceHtmlMentions(
+  html: string,
+  docPath: string | undefined,
+  readFile: FileReader,
+): string {
+  // Cheap guard: most html_block/html_inline output has no mentions at all.
+  if (!html.includes('data-mention')) {
+    return html;
+  }
+  return html.replace(HTML_MENTION, (match, href: string, rest: string) => {
+    const replacement = mentionText(unescapeEntities(href), docPath, readFile);
+    if (replacement === null) {
+      return match;
+    }
+    // Groups 1 and 2 reproduce the matched anchor markup byte-for-byte; only
+    // the inner text changes.
+    return `<a data-mention href="${href}"${rest}><span class="gb-mention">${escapeHtml(replacement)}</span></a>`;
+  });
+}
+
+/**
  * Renders GitBook "mention" links -- `[task.md](task.md "mention")` -- with
  * the TARGET's title (front-matter title / first H1, or the matching section
- * heading for anchor mentions) instead of the raw authored text.
+ * heading for anchor mentions) instead of the raw authored text. The same
+ * treatment covers GitBook's raw-HTML mention form,
+ * `<a data-mention href="task.md">task.md</a>`, which hides inside opaque
+ * `html_block` tokens (whole `<table>` blocks) and split `html_inline`
+ * tokens where the link-token rules never see it.
  *
  * Render-time only: VS Code tokenizes with no `currentDocument` and caches
  * the tokens, so the lookup lives in renderer rules and tokens are never
@@ -197,5 +262,76 @@ export function mentionPlugin(md: MarkdownIt, readFile: FileReader): void {
     return previousText
       ? previousText(tokens, idx, options, env, self)
       : escapeHtml(tokens[idx]!.content);
+  };
+
+  // Raw-HTML mentions. Tokens are cached per document and must stay
+  // env-independent, so this transforms the RULE OUTPUT string only, never
+  // the tokens. VS Code wraps html_block for source mapping, so the previous
+  // rule must run first and its output be transformed; the default rules for
+  // both token types just return token.content.
+  const previousHtmlBlock = md.renderer.rules.html_block;
+  const previousHtmlInline = md.renderer.rules.html_inline;
+
+  md.renderer.rules.html_block = (tokens, idx, options, env, self): string => {
+    const out = previousHtmlBlock
+      ? previousHtmlBlock(tokens, idx, options, env, self)
+      : tokens[idx]!.content;
+    const docPath = (env as RenderEnv | null | undefined)?.currentDocument?.fsPath;
+    return replaceHtmlMentions(out, docPath, readFile);
+  };
+
+  md.renderer.rules.html_inline = (tokens, idx, options, env, self): string => {
+    const renderEnv = (env ?? {}) as RenderEnv;
+    const token = tokens[idx]!;
+    const out = previousHtmlInline
+      ? previousHtmlInline(tokens, idx, options, env, self)
+      : token.content;
+
+    // Closing tag of an inline mention whose authored text is suppressed.
+    // The flag can only be live here for a mention this rule opened: markdown
+    // mention bodies are guaranteed text-only, so no html_inline `</a>` can
+    // occur while a link mention holds the flag.
+    if (renderEnv.gbMentionSuppress && /^<\/a\s*>$/.test(token.content)) {
+      renderEnv.gbMentionSuppress = false;
+      return out;
+    }
+
+    if (!out.includes('data-mention')) {
+      return out;
+    }
+
+    // Defensive: a whole anchor in a single token (markdown-it splits tags,
+    // but a chained rule could have merged them).
+    const replaced = replaceHtmlMentions(out, renderEnv.currentDocument?.fsPath, readFile);
+    if (replaced !== out) {
+      return replaced;
+    }
+
+    // The normal inline shape: open tag, one plain text token, close tag.
+    // Anything else (nested markup, entities splitting the text, a missing
+    // close) renders entirely as-authored.
+    const open = HTML_MENTION_OPEN.exec(out);
+    const body = tokens[idx + 1];
+    const close = tokens[idx + 2];
+    if (
+      !open ||
+      body?.type !== 'text' ||
+      close?.type !== 'html_inline' ||
+      !/^<\/a\s*>$/.test(close.content)
+    ) {
+      return out;
+    }
+
+    const replacement = mentionText(
+      unescapeEntities(open[1]!),
+      renderEnv.currentDocument?.fsPath,
+      readFile,
+    );
+    if (replacement === null) {
+      return out;
+    }
+
+    renderEnv.gbMentionSuppress = true;
+    return `${out}<span class="gb-mention">${escapeHtml(replacement)}</span>`;
   };
 }

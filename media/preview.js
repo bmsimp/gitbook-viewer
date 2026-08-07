@@ -88,8 +88,9 @@
     // renderer emits a hidden marker span purely for this probe; mentions are
     // plain spans. Without these, a page whose only GitBook features are
     // includes/mentions would never be detected and lose the gated styling
-    // (expand cards, Inter).
-    '.gb-mention, .gb-include-marker';
+    // (expand cards, Inter). Raw a[data-mention] anchors count too: an
+    // unresolvable html mention renders with no gb-mention span at all.
+    '.gb-mention, .gb-include-marker, a[data-mention]';
 
   function markDocument() {
     if (document.querySelector(GITBOOK_MARKUP)) {

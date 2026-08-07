@@ -16,6 +16,10 @@ const FILES: Record<string, string> = {
   '/docs/untitled.md': 'Just prose, no heading and no front matter.\n',
   '/docs/.gitbook/includes/frag.md': 'See [sibling.md](sibling.md "mention").\n',
   '/docs/.gitbook/includes/sibling.md': '---\ntitle: Sibling Title\n---\n',
+  '/docs/self/README.md':
+    '---\ntitle: Self Page\n---\n\n## Automatic vs Scheduled Tasks\n\nBody.\n',
+  '/docs/hostile.md': '---\ntitle: <b>Evil & "Sneaky"</b>\n---\n',
+  '/docs/a&b.md': '# Amp Page\n',
 };
 
 const md = gitbookPlugin(new MarkdownIt({ html: true }), {
@@ -168,6 +172,95 @@ describe('mention links', () => {
     const html = md.renderer.render(tokens, md.options, env());
     expect(html).toContain('tail');
     expect(html).toContain('next paragraph');
+  });
+});
+
+describe('html mention anchors', () => {
+  it('replaces the inner text of a data-mention anchor inside an html table', () => {
+    const html = renderLikeVsCode(
+      md,
+      '<table><tbody><tr><td><a data-mention href="task.md">task.md</a></td></tr></tbody></table>\n',
+      env(),
+    );
+    expect(html).toContain(
+      '<a data-mention href="task.md"><span class="gb-mention">Scheduled Task Details</span></a>',
+    );
+    // Surrounding table markup passes through untouched.
+    expect(html).toContain('<table><tbody><tr><td>');
+    expect(html).not.toContain('>task.md</a>');
+  });
+
+  it('replaces the inner text of an inline data-mention anchor in a paragraph', () => {
+    const html = renderLikeVsCode(
+      md,
+      'See <a data-mention href="task.md">task.md</a> for details.',
+      env(),
+    );
+    expect(html).toContain(
+      '<a data-mention href="task.md"><span class="gb-mention">Scheduled Task Details</span></a>',
+    );
+    expect(html).toContain('See ');
+    expect(html).toContain(' for details.');
+    expect(html).not.toContain('>task.md</a>');
+  });
+
+  it('resolves a ./#anchor self-page mention to the heading text', () => {
+    const html = renderLikeVsCode(
+      md,
+      '<table><tbody><tr><td><a data-mention href="./#automatic-vs-scheduled-tasks">#automatic-vs-scheduled-tasks</a></td></tr></tbody></table>\n',
+      { currentDocument: { fsPath: '/docs/self/README.md' } },
+    );
+    expect(html).toContain('<span class="gb-mention">Automatic vs Scheduled Tasks</span>');
+  });
+
+  it('leaves the anchor untouched when the target is missing', () => {
+    const html = renderLikeVsCode(
+      md,
+      '<table><tbody><tr><td><a data-mention href="gone.md">gone.md</a></td></tr></tbody></table>\n',
+      env(),
+    );
+    expect(html).toContain('<a data-mention href="gone.md">gone.md</a>');
+    expect(html).not.toContain('gb-mention');
+  });
+
+  it('leaves the anchor untouched when there is no currentDocument', () => {
+    const html = renderLikeVsCode(
+      md,
+      '<table><tbody><tr><td><a data-mention href="task.md">task.md</a></td></tr></tbody></table>\n',
+      {},
+    );
+    expect(html).toContain('<a data-mention href="task.md">task.md</a>');
+    expect(html).not.toContain('gb-mention');
+  });
+
+  it('escapes a hostile title from the target front matter', () => {
+    const html = renderLikeVsCode(
+      md,
+      '<table><tbody><tr><td><a data-mention href="hostile.md">hostile.md</a></td></tr></tbody></table>\n',
+      env(),
+    );
+    expect(html).toContain(
+      '<span class="gb-mention">&lt;b&gt;Evil &amp; &quot;Sneaky&quot;&lt;/b&gt;</span>',
+    );
+    expect(html).not.toContain('<b>Evil');
+  });
+
+  it('decodes html entities in the href before resolving the target', () => {
+    const html = renderLikeVsCode(
+      md,
+      '<table><tbody><tr><td><a data-mention href="a&amp;b.md">a&amp;b.md</a></td></tr></tbody></table>\n',
+      env(),
+    );
+    expect(html).toContain(
+      '<a data-mention href="a&amp;b.md"><span class="gb-mention">Amp Page</span></a>',
+    );
+  });
+
+  it('passes a plain non-mention anchor in a table through byte-identically', () => {
+    const src = '<table><tbody><tr><td><a href="x">y</a></td></tr></tbody></table>\n';
+    const html = renderLikeVsCode(md, src, env());
+    expect(html).toContain('<table><tbody><tr><td><a href="x">y</a></td></tr></tbody></table>');
+    expect(html).not.toContain('gb-mention');
   });
 });
 
