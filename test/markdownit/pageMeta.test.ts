@@ -43,4 +43,21 @@ describe('extractPageMeta', () => {
   it('returns undefined title when nothing is available', () => {
     expect(extractPageMeta('Just a paragraph.\n').title).toBeUndefined();
   });
+
+  it('folds a >- block scalar into a single space-joined line', () => {
+    expect(extractPageMeta('---\ndescription: >-\n  line1\n  line2\n---\n').description).toBe(
+      'line1 line2',
+    );
+  });
+
+  it('does not swallow a following unindented key after a folded block', () => {
+    const meta = extractPageMeta('---\ndescription: >-\n  line1\n  line2\nicon: x\n---\n');
+    expect(meta.description).toBe('line1 line2');
+    expect(meta.icon).toBe('x');
+  });
+
+  it('leaves an empty value undefined', () => {
+    expect(extractPageMeta('---\ntitle:\n---\nNo heading here.\n').title).toBeUndefined();
+    expect(extractPageMeta('---\ntitle:   \n---\nNo heading here.\n').title).toBeUndefined();
+  });
 });

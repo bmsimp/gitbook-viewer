@@ -76,4 +76,24 @@ describe('embed renderer', () => {
   it('shows the host as the card label', () => {
     expect(md.render('{% embed url="https://app.guidde.com/share/x" %}')).toContain('app.guidde.com');
   });
+
+  it('omits the host span for a non-absolute url', () => {
+    const html = md.render('{% embed url="not a url" %}');
+    expect(html.match(/gb-embed__url/g)).toHaveLength(1);
+    expect(html).not.toContain('gb-embed__host');
+  });
+});
+
+describe('href validation', () => {
+  it('omits the href for a javascript: url but keeps the card', () => {
+    const html = md.render('{% embed url="javascript:alert(1)" %}');
+    expect(html).not.toContain('href=');
+    expect(html).toContain('class="gb-embed"');
+  });
+
+  it('keeps the href for a normal https url', () => {
+    expect(md.render('{% embed url="https://example.com/x" %}')).toContain(
+      'href="https://example.com/x"',
+    );
+  });
 });

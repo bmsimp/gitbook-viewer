@@ -46,11 +46,16 @@ export const contentRefRenderer: TagRenderer = {
       ? `<span class="gb-content-ref__desc">${escapeHtml(meta.description)}</span>`
       : '';
 
+    // Unsafe urls lose the href but keep the card (see embed.ts).
+    const href = ctx.md.validateLink(url) ? ` href="${escapeHtml(url)}"` : '';
+
     return (
-      `<a class="gb-content-ref" href="${escapeHtml(url)}">` +
+      `<a class="gb-content-ref"${href}>` +
       '<span class="gb-content-ref__text">' +
       `<span class="gb-content-ref__title">${escapeHtml(title)}</span>${description}` +
       `</span>${ARROW}</a>` +
+      // Hidden rather than dropped: the inner markdown keeps its DOM so
+      // line-based scroll sync still has elements to anchor to.
       '<div class="gb-content-ref__body" hidden>'
     );
   },
