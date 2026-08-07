@@ -16,6 +16,9 @@ Without this extension, a GitBook page in the preview is a wall of raw `{% hint 
 | `{% embed url="…" %}` | Link card (the preview's CSP forbids iframes, so embeds don't play inline) |
 | `{% file src="…" %}` | Download-style file card |
 | `{% code overflow="wrap" %}` | Fenced code with GitBook's soft-wrap option |
+| `{% @vendor/block … %}` | Integration placeholder card linking out to the vendor URL — Storylane demos get a play badge and "Interactive demo" labeling (the preview's CSP forbids live embeds) |
+| Mention links | Both GitBook mention syntaxes — `[x](page.md "mention")` and raw `<a data-mention href="…">` — render the target page's title (or section heading for `#anchor` mentions) instead of the file name |
+| `<details>` / `<summary>` | GitBook-style expand cards with a rotating chevron |
 | Front matter `description` | GitBook-style page header (the description as a subtitle; `title` is deliberately not rendered and `icon` is reserved) |
 
 Unsupported tags (e.g. `columns`, `expand`) are left as-is rather than mangled.
@@ -72,7 +75,8 @@ npm run corpus -- <path-to-docs>
 ## Notes and limitations
 
 - Inter is bundled and applied only to documents that actually contain GitBook syntax; plain Markdown previews are left alone.
-- Embeds render as link cards — the Markdown preview's Content-Security-Policy forbids iframes.
+- Embeds and integration blocks render as link cards — the Markdown preview's Content-Security-Policy forbids iframes.
+- `<details>` expand-card styling applies in every Markdown preview, not just GitBook documents (per-page gating proved unreliable in the webview and a styled card is harmless).
 - GitBook tag attributes *inside* included files (e.g. a `{% file src %}` within an include) are not path-rebased; regular links and images are.
 - Nested tab groups are unsupported.
 
