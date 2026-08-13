@@ -57,6 +57,31 @@
     });
   }
 
+  /** The label a panel's button should carry. */
+  function tabLabel(panel, index) {
+    return panel.getAttribute('data-gb-tab-title') || 'Tab ' + (index + 1);
+  }
+
+  /**
+   * True when the existing strip already matches the panels exactly.
+   *
+   * Both the count and the labels are compared. Counting alone would leave a
+   * renamed tab showing its old button text, because a title-only edit changes
+   * no counts. Getting this right matters because rebuilding a strip discards
+   * the buttons, and with them any focus the reader had inside it.
+   */
+  function stripMatches(strip, panels) {
+    if (strip.childElementCount !== panels.length) {
+      return false;
+    }
+    for (var i = 0; i < panels.length; i++) {
+      if (strip.children[i].textContent !== tabLabel(panels[i], i)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
   /** Resolve an arrow/Home/End key to the tab it should move to, or -1. */
   function keyTarget(key, index, count) {
     if (key === 'ArrowRight') {
@@ -121,54 +146,61 @@
       }
 
       var panels = group.querySelectorAll('.gb-tabs__tab');
-      // In sync when every panel has its button. VS Code's preview updater
-      // diffs the DOM and can preserve subtrees, so a built strip may survive
-      // while panels are added or removed; rebuilding from scratch on any
-      // mismatch keeps buttons and panels paired by ordinal.
-      if (strip.childElementCount === panels.length) {
-        return; // already built for this markup
-      }
-      while (strip.firstChild) {
-        strip.removeChild(strip.firstChild);
-      }
-      strip.setAttribute('role', 'tablist');
 
+      // Panel wiring is reapplied on every pass rather than only alongside a
+      // strip rebuild. VS Code's preview updater diffs the DOM and can swap the
+      // panels out from under a surviving strip; the replacements arrive as
+      // plain server markup, with none of these attributes on them.
+      // Ids are derived from position so they stay stable across re-renders.
       panels.forEach(function (panel, index) {
-        // Ids are derived from position so they stay stable across re-renders.
-        var ownButtonId = buttonId(groupIndex, index);
-        var ownPanelId = panelId(groupIndex, index);
-
-        panel.id = ownPanelId;
+        panel.id = panelId(groupIndex, index);
         panel.setAttribute('role', 'tabpanel');
-        panel.setAttribute('aria-labelledby', ownButtonId);
-
-        var button = document.createElement('button');
-        button.type = 'button';
-        button.className = 'gb-tabs__button';
-        button.id = ownButtonId;
-        button.setAttribute('role', 'tab');
-        button.setAttribute('aria-selected', 'false');
-        button.setAttribute('aria-controls', ownPanelId);
-        button.setAttribute('tabindex', '-1');
-        button.textContent = panel.getAttribute('data-gb-tab-title') || 'Tab ' + (index + 1);
-        button.addEventListener('click', function () {
-          activate(group, groupIndex, index);
-        });
-        button.addEventListener('keydown', function (event) {
-          var next = keyTarget(event.key, index, panels.length);
-          if (next < 0) {
-            return;
-          }
-          event.preventDefault();
-          activate(group, groupIndex, next);
-          var target = group.querySelectorAll('.gb-tabs__button')[next];
-          if (target) {
-            target.focus();
-          }
-        });
-        strip.appendChild(button);
+        panel.setAttribute('aria-labelledby', buttonId(groupIndex, index));
       });
 
+      if (!stripMatches(strip, panels)) {
+        while (strip.firstChild) {
+          strip.removeChild(strip.firstChild);
+        }
+        strip.setAttribute('role', 'tablist');
+
+        panels.forEach(function (panel, index) {
+          var button = document.createElement('button');
+          button.type = 'button';
+          button.className = 'gb-tabs__button';
+          button.id = buttonId(groupIndex, index);
+          button.setAttribute('role', 'tab');
+          button.setAttribute('aria-selected', 'false');
+          button.setAttribute('aria-controls', panelId(groupIndex, index));
+          button.setAttribute('tabindex', '-1');
+          button.textContent = tabLabel(panel, index);
+          button.addEventListener('click', function () {
+            activate(group, groupIndex, index);
+          });
+          button.addEventListener('keydown', function (event) {
+            // Read the live panel count: this handler outlives the render that
+            // built it, and a later update can change how many tabs there are
+            // without invalidating the strip.
+            var count = group.querySelectorAll('.gb-tabs__tab').length;
+            var next = keyTarget(event.key, index, count);
+            if (next < 0) {
+              return;
+            }
+            event.preventDefault();
+            activate(group, groupIndex, next);
+            var target = group.querySelectorAll('.gb-tabs__button')[next];
+            if (target) {
+              target.focus();
+            }
+          });
+          strip.appendChild(button);
+        });
+      }
+
+      // Reconciled on every pass, including when the strip was reused. A
+      // preserved strip keeps showing the reader's selection, while replaced
+      // panels come back with panel 0 visible — so skipping this leaves the
+      // highlighted button pointing at a hidden panel.
       var remembered = activeByGroup[groupIndex];
       var initial = typeof remembered === 'number' && remembered < panels.length ? remembered : 0;
       activate(group, groupIndex, initial);

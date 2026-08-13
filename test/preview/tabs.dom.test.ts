@@ -343,6 +343,56 @@ describe('vscode preview lifecycle', () => {
     expect(dom.window.document.querySelectorAll('.gb-tabs__button')).toHaveLength(2);
   });
 
+  it('reapplies the remembered selection when the patcher resets the panels', async () => {
+    // The patcher can preserve the built strip while replacing the panels with
+    // fresh server markup, which resets panel 0 to visible. The button state
+    // must not be left disagreeing with the panel that is actually showing.
+    const dom = new JSDOM(`<body>${HTML}</body>`, { runScripts: 'outside-only' });
+    await new Promise<void>((resolve) => {
+      dom.window.addEventListener('load', () => resolve());
+    });
+    dom.window.eval(SCRIPT);
+
+    const doc = dom.window.document;
+    doc.querySelectorAll<HTMLButtonElement>('.gb-tabs__button')[1]!.click();
+
+    // Replace only the panels, exactly as the server renders them; the strip
+    // and its two buttons survive.
+    const group = doc.querySelector('[data-gb-tabs]')!;
+    for (const panel of group.querySelectorAll('.gb-tabs__tab')) {
+      panel.remove();
+    }
+    group.insertAdjacentHTML(
+      'beforeend',
+      '<div class="gb-tabs__tab" data-gb-tab-index="0" data-gb-tab-title="One" data-gb-active="true"></div>' +
+        '<div class="gb-tabs__tab" data-gb-tab-index="1" data-gb-tab-title="Two" data-gb-active="false" hidden></div>',
+    );
+    dom.window.dispatchEvent(new dom.window.Event('vscode.markdown.updateContent'));
+
+    const buttons = doc.querySelectorAll('.gb-tabs__button');
+    const panels = doc.querySelectorAll<HTMLElement>('.gb-tabs__tab');
+    // The remembered tab is still the selected one, and it is the one showing.
+    expect(buttons[1]!.getAttribute('aria-selected')).toBe('true');
+    expect(panels[1]!.hasAttribute('hidden')).toBe(false);
+    expect(panels[0]!.hasAttribute('hidden')).toBe(true);
+  });
+
+  it('relabels the buttons when a tab title changes without changing the count', async () => {
+    const dom = new JSDOM(`<body>${HTML}</body>`, { runScripts: 'outside-only' });
+    await new Promise<void>((resolve) => {
+      dom.window.addEventListener('load', () => resolve());
+    });
+    dom.window.eval(SCRIPT);
+
+    const doc = dom.window.document;
+    expect(doc.querySelectorAll('.gb-tabs__button')[1]!.textContent).toBe('Two');
+
+    doc.querySelectorAll('.gb-tabs__tab')[1]!.setAttribute('data-gb-tab-title', 'Renamed');
+    dom.window.dispatchEvent(new dom.window.Event('vscode.markdown.updateContent'));
+
+    expect(doc.querySelectorAll('.gb-tabs__button')[1]!.textContent).toBe('Renamed');
+  });
+
   it('rebuilds the tab strip after the patcher wipes it', async () => {
     const dom = new JSDOM(
       '<body><div class="gb-tabs" data-gb-tabs>' +
