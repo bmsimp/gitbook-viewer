@@ -1,0 +1,26 @@
+{
+  "manifestVersion": 2,
+  "id": "gitbook-viewer",
+  "name": "GitBook Viewer",
+  "version": "0.1.0",
+  "description": "Adds a GitBook view beside Source for Markdown files: hints, tabs, steppers, cards and the GitBook palette, rendered by the same engine as the GitBook Viewer VS Code extension.",
+  "license": "MIT",
+  "repository": "https://github.com/bmsimp/gitbook-viewer",
+  "engines": {
+    "orca": ">=1.4.248"
+  },
+  "execution": "sandboxed-ui",
+  "pluginApi": 1,
+  "contributes": {
+    "customEditors": [
+      {
+        "id": "gitbook-preview",
+        "title": "GitBook",
+        "extensions": [".md"],
+        "entry": "editor/main.ts",
+        "priority": "option",
+        "frame": "isolated"
+      }
+    ]
+  }
+}

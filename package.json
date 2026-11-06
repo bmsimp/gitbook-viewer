@@ -17,6 +17,10 @@
     "Visualization"
   ],
   "main": "./dist/extension.js",
+  "bin": {
+    "gitbook-serve": "scripts/serve-docs.mjs",
+    "gitbook-render": "scripts/render-standalone.mjs"
+  },
   "activationEvents": [
     "onLanguage:markdown"
   ],
@@ -60,10 +64,13 @@
     "build": "node esbuild.mjs",
     "watch": "node esbuild.mjs --watch",
     "fonts": "node scripts/build-font-css.mjs",
-    "compile": "npm run fonts && npm run build",
+    "compile": "npm run fonts && npm run build && npm run build:orca",
     "test": "vitest run",
     "corpus": "node scripts/corpus-check.mjs",
-    "typecheck": "tsc --noEmit",
+    "render": "node scripts/render-standalone.mjs",
+    "serve": "node scripts/serve-docs.mjs",
+    "build:orca": "node scripts/build-orca-plugin.mjs",
+    "typecheck": "tsc --noEmit && tsc -p orca-plugin",
     "package": "npm run compile && vsce package",
     "vscode:prepublish": "npm run compile"
   },

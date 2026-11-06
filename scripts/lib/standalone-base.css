@@ -1,0 +1,60 @@
+/* Base page styles for the standalone tools (docs server, one-shot render, and
+   the Orca editor). VS Code's Markdown preview supplies these itself; outside
+   it, plain Markdown — code, dividers, tables, quotes — would be unstyled.
+   Colours come from GitBook's palette in media/gitbook.css, so the page
+   ground and text follow the same light/dark switch as the GitBook blocks. */
+
+body {
+  margin: 0;
+  background: rgb(var(--gb-tint-base));
+  color: rgb(var(--gb-tint-text));
+  line-height: 1.6;
+  color-scheme: light;
+  --gbv-link: 52 109 219;
+}
+body.vscode-dark:not([data-gb-scheme]),
+body[data-gb-scheme='dark'] {
+  color-scheme: dark;
+  --gbv-link: 107 156 255;
+}
+
+.gbv-article { max-width: 46rem; margin: 0 auto; padding: 1.5rem 1.5rem 6rem; }
+.gbv-article a { color: rgb(var(--gbv-link)); text-underline-offset: 2px; }
+.gbv-article img { max-width: 100%; }
+:target { scroll-margin-top: 3.5rem; }
+
+.gbv-article hr {
+  border: 0;
+  border-top: 1px solid rgb(var(--gb-tint-subtle));
+  margin: 2rem 0;
+}
+
+.gbv-article code {
+  font-family: ui-monospace, SFMono-Regular, 'Cascadia Code', Menlo, Consolas, monospace;
+  font-size: 0.875em;
+}
+.gbv-article :not(pre) > code {
+  padding: 0.1em 0.35em;
+  border-radius: 4px;
+  background: rgb(var(--gb-tint-subtle) / 0.5);
+}
+.gbv-article pre {
+  padding: 1rem 1.25rem;
+  overflow-x: auto;
+  border-radius: 8px;
+  border: 1px solid rgb(var(--gb-tint-subtle));
+  background: rgb(var(--gb-tint-subtle) / 0.25);
+  line-height: 1.5;
+}
+
+.gbv-article blockquote {
+  margin: 1rem 0;
+  padding: 0 1rem;
+  border-left: 3px solid rgb(var(--gb-tint-subtle));
+  color: rgb(var(--gb-tint-muted));
+}
+
+.gbv-article table { border-collapse: collapse; margin: 1rem 0; display: block; overflow-x: auto; }
+.gbv-article th,
+.gbv-article td { padding: 0.5rem 0.75rem; border: 1px solid rgb(var(--gb-tint-subtle)); text-align: left; }
+.gbv-article th { background: rgb(var(--gb-tint-subtle) / 0.35); }

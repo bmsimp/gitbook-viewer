@@ -13,3 +13,5 @@ vitest.config.ts
 **/*.ts
 .gitattributes
 .gitignore
+orca-plugin/**
+.impeccable/**
